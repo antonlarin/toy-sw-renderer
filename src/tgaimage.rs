@@ -1,9 +1,9 @@
 use core::result::Result;
 use std::convert::From;
 use std::fs::File;
-use std::io::Write;
+use std::io::{BufWriter, Write};
 
-pub mod TGAFormat {
+pub mod tga_format {
     pub const GRAYSCALE: i32 = 1;
     pub const RGB: i32 = 3;
     pub const RGBA: i32 = 4;
@@ -20,7 +20,7 @@ pub enum TGAError {
 type TGAResult<T> = Result<T, TGAError>;
 
 impl From<std::io::Error> for TGAError {
-    fn from(err: std::io::Error) -> TGAError {
+    fn from(_: std::io::Error) -> TGAError {
         TGAError::WriteError
     }
 }
@@ -46,7 +46,7 @@ impl TGAHeader {
         TGAHeader {
             id_length: 0,
             color_map_type: 0,
-            data_type_code: if img.bytespp == TGAFormat::GRAYSCALE { 11 } else { 10 },
+            data_type_code: if img.bytespp == tga_format::GRAYSCALE { 11 } else { 10 },
             color_map_origin: 0,
             color_map_length: 0,
             color_map_depth: 0,
@@ -74,7 +74,7 @@ impl TGAHeader {
         res.push(self.bits_per_pixel as u8);
         res.push(self.image_descriptor as u8);
 
-        sink.write(&res)?;
+        sink.write_all(&res)?;
         Ok(())
     }
 }
@@ -123,6 +123,11 @@ impl TGAColor {
             bytespp: bpp
         }
     }
+
+    pub fn r(self: &Self) -> u8 { self.val[2] }
+    pub fn g(self: &Self) -> u8 { self.val[1] }
+    pub fn b(self: &Self) -> u8 { self.val[0] }
+    pub fn a(self: &Self) -> u8 { self.val[3] }
 }
 
 #[derive(Debug)]
@@ -137,23 +142,65 @@ pub struct TGAImage {
 
 // }
 
-fn unload_rle_data<W: Write>(img: &TGAImage, sink: &mut W) -> TGAResult<()> {
-    const MAX_CHUNK: i32 = 128;
-    let num_pixels = img.width * img.height;
-    let mut current_px = 0;
+fn unload_rle_data<W: Write>(img: &TGAImage, dst: &mut W) -> TGAResult<()> {
+    const MAX_CHUNK: usize = 128;
+    let num_pixels = (img.width * img.height) as usize;
+    let mut next_px_to_write = 0 as usize;
 
-    while current_px < num_pixels {
-        let chunk_start = current_px * img.bytespp;
-        let current_byte = current_px * img.bytespp;
+    let data = img.data.as_slice();
+    let bpp = img.bytespp as usize;
+
+    while next_px_to_write < num_pixels {
+        let chunk_start = next_px_to_write * bpp;
+        let mut i = next_px_to_write * bpp;
         let mut run_length = 1;
-        let is_raw = true;
+        let mut run_raw = true;
 
-        while current_px + run_length < num_pixels && run_length < MAX_CHUNK {
-            let next_equal = true;
+        while next_px_to_write + run_length < num_pixels && run_length < MAX_CHUNK {
+            let next_pair_equal = data[i..(i + bpp)] == data[(i + bpp)..(i + 2 * bpp)];
+            i += bpp;
 
-            todo!();
+            // when starting new run, determine if it'll be raw run or
+            // rl-encoded run
+            if run_length == 1 {
+                run_raw = !next_pair_equal;
+            }
 
+            // when in the middle of the run, check end conditions
+            if run_raw && next_pair_equal {
+                // break raw run only if three equal pixels are found
+                if next_px_to_write + run_length + 1 < num_pixels &&
+                   data[i..(i + bpp)] == data[(i + bpp)..(i + 2 * bpp)] {
+                    // if raw run is broken, current pixel belongs to
+                    // the next encoded run
+                    run_length -= 1;
+                    break;
+                }
+            }
+            if !run_raw && !next_pair_equal {
+                break;
+            }
+
+            // if run continues, the next pixel we checked just now is a part
+            // of it, so increment the length
             run_length += 1;
+        }
+        next_px_to_write += run_length;
+
+        // subtracting 1 in both cases so that marker range [0, 127] corresponds to
+        // run length range [1, 128] to utilize all values, since zero-length
+        // runs don't exist
+        let marker = if run_raw {
+            run_length - 1
+        } else {
+            run_length - 1 | 0x80
+        };
+
+        dst.write_all(&[marker as u8])?;
+        if run_raw {
+            dst.write_all(&data[chunk_start..(chunk_start + run_length * bpp)])?;
+        } else {
+            dst.write_all(&data[chunk_start..(chunk_start + bpp)])?;
         }
     }
 
@@ -188,11 +235,12 @@ impl TGAImage {
     pub fn write_to_file(self: &Self, filename: &str) -> TGAResult<()> {
         const FOOTER: &str = "\0\0\0\0\0\0\0\0TRUEVISION-XFILE.\0";
 
-        if let Ok(mut file) = File::create(filename) {
+        if let Ok(file) = File::create(filename) {
+            let mut buffered_file = BufWriter::new(file);
             let header = TGAHeader::from_image(self);
-            header.write(&mut file)?;
-            unload_rle_data(self, &mut file)?;
-            file.write(FOOTER.as_bytes())?;
+            header.write(&mut buffered_file)?;
+            unload_rle_data(self, &mut buffered_file)?;
+            buffered_file.write_all(FOOTER.as_bytes())?;
         } else {
             return Err(TGAError::FileOpenError)
         }
@@ -210,8 +258,8 @@ impl TGAImage {
         }
 
         let bytes_per_line = (self.width * self.bytespp) as usize;
-        let mut line1: Vec<u8> = Vec::with_capacity(bytes_per_line);
-        let mut line2: Vec<u8> = Vec::with_capacity(bytes_per_line);
+        let mut line1 = vec![0 as u8; bytes_per_line];
+        let mut line2 = vec![0 as u8; bytes_per_line];
 
         let half = (self.height / 2) as usize;
         for i in 0..half {
@@ -247,8 +295,9 @@ impl TGAImage {
             return Err(TGAError::InvalidCoords)
         }
 
-        let offset = (x + y * self.width) as usize;
-        let pixel = &self.data.as_slice()[offset..(offset + self.bytespp as usize)];
+        let bpp = self.bytespp as usize;
+        let offset = (x + y * self.width) as usize * bpp;
+        let pixel = &self.data.as_slice()[offset..(offset + bpp)];
 
         Ok(TGAColor::from_component_slice(pixel, self.bytespp))
     }
@@ -261,16 +310,95 @@ impl TGAImage {
         }
 
         let bpp = self.bytespp as usize;
-        let offset = (x + y * self.width) as usize;
-        self.data[offset..(offset + bpp)].copy_from_slice(c.val[0..bpp].as_ref());
+        let offset = (x + y * self.width) as usize * bpp;
+        self.data[offset..(offset + bpp)].copy_from_slice(&c.val[..bpp]);
 
         Ok(())
     }
 
-    // fn buffer(self: &Self) -> &[u8] {
-    // }
-
     fn clear(self: &mut Self) {
         self.data.fill(0 as u8);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{tga_format, TGAColor, TGAImage, unload_rle_data};
+
+    #[test]
+    fn rle_encode_grayscale() {
+        let image = TGAImage {
+            data: vec![0, 3, 1, 4, 4, 5, 5, 5, 0],
+            width: 3,
+            height: 3,
+            bytespp: tga_format::GRAYSCALE
+        };
+
+        let mut target = vec![0 as u8; 10];
+        unload_rle_data(&image, &mut target.as_mut_slice()).unwrap();
+
+        let expected = [4, 0, 3, 1, 4, 4, 130, 5, 0, 0] as [u8; 10];
+        assert_eq!(target.as_slice(), expected);
+    }
+
+    #[test]
+    fn rle_encode_rgb() {
+        let image = TGAImage {
+            data: vec![
+                0, 0, 0,   0,   0, 0,   0, 0, 0,
+                0, 0, 0,   255, 0, 0,   0, 0, 0,
+                0, 0, 0,   0,   0, 0,   0, 0, 0
+            ],
+            width: 3,
+            height: 3,
+            bytespp: tga_format::RGB
+        };
+
+        let mut target = vec![0 as u8; 12];
+        unload_rle_data(&image, &mut target.as_mut_slice()).unwrap();
+
+        let expected = [131, 0, 0, 0, 0, 255, 0, 0, 131, 0, 0, 0];
+        assert_eq!(target.as_slice(), expected);
+    }
+
+    #[test]
+    fn flip_vertically() {
+        let mut image = TGAImage {
+            data: vec![1, 2, 3, 4, 5, 6],
+            width: 3,
+            height: 2,
+            bytespp: tga_format::GRAYSCALE
+        };
+
+        image.flip_vertically().unwrap();
+
+        let expected = [4, 5, 6, 1, 2, 3] as [u8; 6];
+        assert_eq!(image.data.as_slice(), expected);
+    }
+
+    #[test]
+    fn set() {
+        let mut image = TGAImage::with_size(5, 5, tga_format::RGBA);
+        image.set(1, 2, TGAColor::from_components(255, 0, 0, 255)).unwrap();
+        assert_eq!(image.data[46], 255);
+    }
+
+    #[test]
+    fn get() {
+        let mut image = TGAImage {
+            data: vec![
+                0, 0, 0,   0, 0, 0,
+                0, 0, 0,   0, 0, 0,
+                0, 0, 0,   128, 0, 0
+            ],
+            width: 2,
+            height: 3,
+            bytespp: tga_format::RGB
+        };
+
+        let color = image.get(1, 2).unwrap();
+        assert_eq!(color.r(), 0);
+        assert_eq!(color.g(), 0);
+        assert_eq!(color.b(), 128);
     }
 }
