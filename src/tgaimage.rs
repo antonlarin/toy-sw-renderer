@@ -59,7 +59,7 @@ impl TGAHeader {
         }
     }
 
-    fn write<W: Write>(self: &Self, sink: &mut W) -> TGAResult<()> {
+    fn write<W: Write>(self, sink: &mut W) -> TGAResult<()> {
         let mut res: Vec<u8> = Vec::with_capacity(std::mem::size_of::<TGAHeader>());
         res.push(self.id_length as u8);
         res.push(self.color_map_type as u8);
@@ -124,10 +124,10 @@ impl TGAColor {
         }
     }
 
-    pub fn r(self: &Self) -> u8 { self.val[2] }
-    pub fn g(self: &Self) -> u8 { self.val[1] }
-    pub fn b(self: &Self) -> u8 { self.val[0] }
-    pub fn a(self: &Self) -> u8 { self.val[3] }
+    pub fn r(&self) -> u8 { self.val[2] }
+    pub fn g(&self) -> u8 { self.val[1] }
+    pub fn b(&self) -> u8 { self.val[0] }
+    pub fn a(&self) -> u8 { self.val[3] }
 }
 
 #[derive(Debug)]
@@ -145,7 +145,7 @@ pub struct TGAImage {
 fn unload_rle_data<W: Write>(img: &TGAImage, dst: &mut W) -> TGAResult<()> {
     const MAX_CHUNK: usize = 128;
     let num_pixels = (img.width * img.height) as usize;
-    let mut next_px_to_write = 0 as usize;
+    let mut next_px_to_write = 0_usize;
 
     let data = img.data.as_slice();
     let bpp = img.bytespp as usize;
@@ -193,7 +193,7 @@ fn unload_rle_data<W: Write>(img: &TGAImage, dst: &mut W) -> TGAResult<()> {
         let marker = if run_raw {
             run_length - 1
         } else {
-            run_length - 1 | 0x80
+            (run_length - 1) | 0x80
         };
 
         dst.write_all(&[marker as u8])?;
@@ -219,9 +219,9 @@ impl TGAImage {
 
     pub fn with_size(w: i32, h: i32, bpp: i32) -> Self {
         let size = w * h * bpp;
-        let data = vec![0 as u8; size as usize];
+        let data = vec![0_u8; size as usize];
         TGAImage {
-            data: data,
+            data,
             width: w,
             height: h,
             bytespp: bpp
@@ -232,7 +232,7 @@ impl TGAImage {
 
     // }
 
-    pub fn write_to_file(self: &Self, filename: &str) -> TGAResult<()> {
+    pub fn write_to_file(&self, filename: &str) -> TGAResult<()> {
         const FOOTER: &str = "\0\0\0\0\0\0\0\0TRUEVISION-XFILE.\0";
 
         if let Ok(file) = File::create(filename) {
@@ -252,14 +252,14 @@ impl TGAImage {
 
     // }
 
-    pub fn flip_vertically(self: &mut Self) -> TGAResult<()> {
+    pub fn flip_vertically(&mut self) -> TGAResult<()> {
         if self.data.is_empty() {
             return Err(TGAError::EmptyImage)
         }
 
         let bytes_per_line = (self.width * self.bytespp) as usize;
-        let mut line1 = vec![0 as u8; bytes_per_line];
-        let mut line2 = vec![0 as u8; bytes_per_line];
+        let mut line1 = vec![0_u8; bytes_per_line];
+        let mut line2 = vec![0_u8; bytes_per_line];
 
         let half = (self.height / 2) as usize;
         for i in 0..half {
@@ -288,7 +288,7 @@ impl TGAImage {
 
     // }
 
-    pub fn get(self: &Self, x: i32, y: i32) -> TGAResult<TGAColor> {
+    pub fn get(&self, x: i32, y: i32) -> TGAResult<TGAColor> {
         if self.data.is_empty() {
             return Err(TGAError::EmptyImage)
         } else if x < 0 || y < 0 || x >= self.width || y >= self.height {
@@ -302,7 +302,7 @@ impl TGAImage {
         Ok(TGAColor::from_component_slice(pixel, self.bytespp))
     }
 
-    pub fn set(self: &mut Self, x: i32, y: i32, c: TGAColor) -> TGAResult<()> {
+    pub fn set(&mut self, x: i32, y: i32, c: TGAColor) -> TGAResult<()> {
         if self.data.is_empty() {
             return Err(TGAError::EmptyImage)
         } else if x < 0 || y < 0 || x >= self.width || y >= self.height {
@@ -316,8 +316,8 @@ impl TGAImage {
         Ok(())
     }
 
-    fn clear(self: &mut Self) {
-        self.data.fill(0 as u8);
+    fn clear(&mut self) {
+        self.data.fill(0_u8);
     }
 }
 
@@ -334,7 +334,7 @@ mod tests {
             bytespp: tga_format::GRAYSCALE
         };
 
-        let mut target = vec![0 as u8; 10];
+        let mut target = vec![0_u8; 10];
         unload_rle_data(&image, &mut target.as_mut_slice()).unwrap();
 
         let expected = [4, 0, 3, 1, 4, 4, 130, 5, 0, 0] as [u8; 10];
@@ -354,7 +354,7 @@ mod tests {
             bytespp: tga_format::RGB
         };
 
-        let mut target = vec![0 as u8; 12];
+        let mut target = vec![0_u8; 12];
         unload_rle_data(&image, &mut target.as_mut_slice()).unwrap();
 
         let expected = [131, 0, 0, 0, 0, 255, 0, 0, 131, 0, 0, 0];
