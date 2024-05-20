@@ -79,7 +79,7 @@ impl TGAHeader {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug)]
 pub struct TGAColor {
     val: [u8; 4],
     bytespp: i32

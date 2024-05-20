@@ -3,6 +3,13 @@ name = "tinyren"
 version = "0.1.0"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[lib]
+name = "tinyren"
+path = "src/lib.rs"
 
-[dependencies]
+[[bin]]
+name = "tinyren-test"
+path = "src/main.rs"
+
+[profile.release]
+debug = 1
