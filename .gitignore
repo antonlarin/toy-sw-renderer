@@ -1,3 +1,8 @@
+# uninteresting folders
 /target
-*.tga
 /profiling
+/assets
+
+# resources
+*.tga
+*.obj

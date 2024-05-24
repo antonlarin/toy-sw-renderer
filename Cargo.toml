@@ -8,8 +8,12 @@ name = "tinyren"
 path = "src/lib.rs"
 
 [[bin]]
-name = "tinyren-test"
-path = "src/main.rs"
+name = "threelines"
+path = "src/threelines.rs"
+
+[[bin]]
+name = "wireframe"
+path = "src/wireframe.rs"
 
 [profile.release]
 debug = 1
