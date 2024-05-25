@@ -3,5 +3,5 @@
 version = 3
 
 [[package]]
-name = "tinyren"
+name = "toy-sw-renderer"
 version = "0.1.0"

@@ -1,19 +1,11 @@
 [package]
-name = "tinyren"
+name = "toy-sw-renderer"
 version = "0.1.0"
 edition = "2021"
 
 [lib]
-name = "tinyren"
+name = "swrender"
 path = "src/lib.rs"
-
-[[bin]]
-name = "threelines"
-path = "src/threelines.rs"
-
-[[bin]]
-name = "wireframe"
-path = "src/wireframe.rs"
 
 [profile.release]
 debug = 1

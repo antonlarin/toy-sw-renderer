@@ -57,7 +57,7 @@ fn line_faster(mut x0: i32, mut y0: i32, mut x1: i32, mut y1: i32, image: &mut T
     }
 }
 
-pub fn line (x0: i32, y0: i32, x1: i32, y1: i32, image: &mut TGAImage, color: TGAColor) {
+pub fn draw_line (x0: i32, y0: i32, x1: i32, y1: i32, image: &mut TGAImage, color: TGAColor) {
     // line_naive(x0, y0, x1, y1, image, color);
     line_faster(x0, y0, x1, y1, image, color);
 }

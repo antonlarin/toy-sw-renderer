@@ -1,8 +1,6 @@
-mod tgaimage;
-mod renderer;
-mod objmodel;
+extern crate swrender;
 
-use tgaimage::{tga_format, TGAColor, TGAImage};
+use swrender::tgaimage::{tga_format, TGAColor, TGAImage};
 
 fn main() {
     let white: TGAColor = TGAColor::from_components(255, 255, 255, 255);
