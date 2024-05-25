@@ -1,17 +1,18 @@
 use std::fs::File;
 use std::io::{BufReader, BufRead};
 
-struct Point3 {
-    coord: [f32; 3],
+#[derive(Clone, Copy)]
+pub struct Point3 {
+    pub coord: [f32; 3],
 }
 
-struct Triangle {
-    vertices: [u32; 3]
+pub struct Triangle {
+    pub vertices: [u32; 3]
 }
 
 pub struct ObjModel {
-    vertices: Vec<Point3>,
-    triangles: Vec<Triangle>,
+    pub vertices: Vec<Point3>,
+    pub triangles: Vec<Triangle>,
 }
 
 impl ObjModel {
