@@ -60,6 +60,28 @@ impl ObjModel {
                 },
                 Some("f") => {
                     // parse the rest as face
+                    let mut i = 0;
+                    let mut vertices = [0u32; 3];
+                    for line_elem in split {
+                        if let Some(idx_str) = line_elem.split('/').next() {
+                            match idx_str.parse::<u32>() {
+                                Ok(idx) if i < 3 => {
+                                    vertices[i] = idx;
+                                    i += 1;
+                                },
+                                _ => {
+                                    continue;
+                                }
+                            }
+                        }
+                    }
+
+                    if i < 3 {
+                        // not enough vertex indexes for triangle
+                        continue;
+                    } else {
+                        res.triangles.push(Triangle { vertices });
+                    }
                 },
                 Some("vt") => {
                     // TODO
@@ -90,6 +112,16 @@ mod tests {
 
         let model = model.unwrap();
         assert_eq!(model.vertices.len(), 8);
-        assert_eq!(model.triangles.len(), 0);
+        assert_eq!(model.triangles.len(), 12);
+    }
+
+    #[test]
+    fn import_african_head() {
+        let model = ObjModel::from_file("assets/african_head.obj");
+        assert!(model.is_some());
+
+        let model = model.unwrap();
+        assert_eq!(model.vertices.len(), 1258);
+        assert_eq!(model.triangles.len(), 2492);
     }
 }
