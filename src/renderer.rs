@@ -41,7 +41,7 @@ fn line_faster(mut x0: i32, mut y0: i32, mut x1: i32, mut y1: i32, image: &mut T
     let dy = y1 - y0;
     let incy = if dy > 0 { 1 } else { -1 };
     let mut y = y0;
-    let dacc = dy * 2;
+    let dacc = dy.abs() * 2;
     let mut acc = 0;
     for x in x0..=x1 {
         if steep {

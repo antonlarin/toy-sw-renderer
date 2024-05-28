@@ -2,10 +2,12 @@ use std::fs::File;
 use std::io::{BufReader, BufRead};
 use crate::math::Point3;
 
+#[derive(Debug)]
 pub struct Triangle {
     pub vertices: [u32; 3]
 }
 
+#[derive(Debug)]
 pub struct ObjModel {
     pub vertices: Vec<Point3>,
     pub triangles: Vec<Triangle>,

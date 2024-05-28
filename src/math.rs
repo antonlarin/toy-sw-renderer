@@ -2,7 +2,7 @@ use std::ops::{Add, Mul, Sub};
 
 const EPSILON: f32 = 1e-7;
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct Point2 {
     pub x: f32,
     pub y: f32,
@@ -30,7 +30,7 @@ pub struct Vec2 {
 impl Vec2 {
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct Point3 {
     pub x: f32,
     pub y: f32,
@@ -58,7 +58,7 @@ impl From<Vec3> for Point3 {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct Vec3 {
     pub x: f32,
     pub y: f32,
@@ -88,6 +88,14 @@ impl Vec3 {
             None
         } else {
             Some(res)
+        }
+    }
+
+    pub fn cross(&self, other: Self) -> Self {
+        Self {
+            x: self.y * other.z - self.z * other.y,
+            y: self.z * other.x - self.x * other.z,
+            z: self.x * other.y - self.y * other.x,
         }
     }
 }

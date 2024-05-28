@@ -5,16 +5,20 @@ use swrender::math::{BndBox2, Point2, Point3, Vec3};
 use swrender::objmodel::ObjModel;
 use swrender::tgaimage::{tga_format, TGAColor, TGAImage};
 
+#[derive(Debug)]
 struct Camera {
     dir: Vec3,
     up: Vec3,
+    ref_dir: Vec3,
 }
 
 impl Camera {
     fn new(dir: Vec3, up: Vec3) -> Camera {
         let dir = dir.normalize();
         if let Some(up) = up.orthogonalize(dir) {
-            Camera { dir, up: up.normalize() }
+            let up = up.normalize();
+            let ref_dir = dir.cross(up);
+            Camera { dir, up, ref_dir }
         } else {
             panic!("Wrong params for camera given");
         }
@@ -25,9 +29,10 @@ impl Camera {
 /// The plane's origin is projection of 3D origin onto it.
 fn project(cam: &Camera, pnt: &Point3) -> Point2 {
     let rad_vec: Vec3 = (*pnt).into();
-    let vec_in_plane = rad_vec - rad_vec.dot(cam.dir) * rad_vec;
+    let dp = rad_vec.dot(cam.dir);
+    let vec_in_plane = rad_vec - dp * cam.dir;
     let y = vec_in_plane.dot(cam.up);
-    let x = (vec_in_plane - y * cam.up).norm();
+    let x = vec_in_plane.dot(cam.ref_dir);
     Point2 { x, y }
 }
 
@@ -59,8 +64,10 @@ fn main() {
             let p1 = model.vertices[v1 as usize - 1];
             let p2 = model.vertices[v2 as usize - 1];
 
-            pnt2s.push(project(&camera, &p1));
-            pnt2s.push(project(&camera, &p2));
+            let pnt2_1 = project(&camera, &p1);
+            let pnt2_2 = project(&camera, &p2);
+            pnt2s.push(pnt2_1);
+            pnt2s.push(pnt2_2);
         }
     }
 
@@ -69,7 +76,8 @@ fn main() {
         bnd_box.add_point(*pnt2);
     }
     let range_vec = bnd_box.max - bnd_box.min;
-    let range = range_vec.x.max(range_vec.y);
+    const MARGIN_FACTOR: f32 = 1.05;
+    let range = range_vec.x.max(range_vec.y) * MARGIN_FACTOR;
     let center = bnd_box.center();
     for mut p in pnt2s.as_mut_slice() {
         p.x = (p.x - center.x) / range * IMAGE_SIZE as f32 + (IMAGE_SIZE / 2) as f32;
