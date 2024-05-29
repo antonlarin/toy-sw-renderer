@@ -1,7 +1,7 @@
 extern crate swrender;
 
+use swrender::renderer::draw_line;
 use swrender::tgaimage::{tga_format, TGAColor, TGAImage};
-use swrender::draw_line;
 
 fn main() {
     let white: TGAColor = TGAColor::from_components(255, 255, 255, 255);

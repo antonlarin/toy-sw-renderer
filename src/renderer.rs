@@ -1,63 +1,58 @@
+mod camera;
+mod lines;
+
+pub use camera::Camera;
+pub use lines::draw_line;
+
+use crate::math::{BndBox2, Point2};
+use crate::objmodel::ObjModel;
 use crate::tgaimage::{TGAColor, TGAImage};
 
-#[allow(dead_code)]
-fn line_naive(mut x0: i32, mut y0: i32, mut x1: i32, mut y1: i32, image: &mut TGAImage, color: TGAColor) {
-    let mut steep = false;
-    if (x1 - x0).abs() < (y1 - y0).abs() {
-        std::mem::swap(&mut x0, &mut y0);
-        std::mem::swap(&mut x1, &mut y1);
-        steep = true;
-    }
+pub fn draw_mesh_wireframe(model: &ObjModel,
+                           camera: &Camera,
+                           image: &mut TGAImage,
+                           color: TGAColor) {
+    // Compute 2D camera plane coords of triangle edges
+    let mut pnt2s: Vec<Point2> = Vec::new();
+    for tri in model.triangles.as_slice() {
+        let vert1_iter = tri.vertices.into_iter();
+        let vert2_iter = tri.vertices.into_iter();
+        for (v1, v2) in vert1_iter.zip(vert2_iter.cycle().skip(1)) {
+            let p1 = model.vertices[v1 as usize - 1];
+            let p2 = model.vertices[v2 as usize - 1];
 
-    if x1 < x0 {
-        std::mem::swap(&mut x0, &mut x1);
-        std::mem::swap(&mut y0, &mut y1);
-    }
-
-    for x in x0..=x1 {
-        let y = y0 + (y1 - y0) * (x - x0) / (x1 - x0);
-        if steep {
-            image.set(y, x, color).unwrap();
-        } else {
-            image.set(x, y, color).unwrap();
+            let pnt2_1 = camera.project_point(&p1);
+            let pnt2_2 = camera.project_point(&p2);
+            pnt2s.push(pnt2_1);
+            pnt2s.push(pnt2_2);
         }
     }
-}
 
-fn line_faster(mut x0: i32, mut y0: i32, mut x1: i32, mut y1: i32, image: &mut TGAImage, color: TGAColor) {
-    let mut steep = false;
-    if (x1 - x0).abs() < (y1 - y0).abs() {
-        std::mem::swap(&mut x0, &mut y0);
-        std::mem::swap(&mut x1, &mut y1);
-        steep = true;
+    let mut bnd_box = BndBox2::new_empty();
+    for pnt2 in pnt2s.as_slice() {
+        bnd_box.add_point(*pnt2);
+    }
+    let range_vec = bnd_box.max - bnd_box.min;
+    const MARGIN_FACTOR: f32 = 1.05;
+    let range = range_vec.x.max(range_vec.y) * MARGIN_FACTOR;
+    let center = bnd_box.center();
+    let image_width = image.width as f32;
+    let image_height = image.height as f32;
+    for mut p in pnt2s.as_mut_slice() {
+        p.x = (p.x - center.x) / range * image_width + image_width / 2.0;
+        p.y = (p.y - center.y) / range * image_height + image_height / 2.0;
     }
 
-    if x1 < x0 {
-        std::mem::swap(&mut x0, &mut x1);
-        std::mem::swap(&mut y0, &mut y1);
+    // Draw the edges
+    for i in (0..pnt2s.len()).step_by(2) {
+        let (p1, p2) = (pnt2s[i], pnt2s[i + 1]);
+        draw_line(
+            p1.x as i32,
+            p1.y as i32,
+            p2.x as i32,
+            p2.y as i32,
+            image,
+            color,
+        );
     }
-
-    let dx = x1 - x0;
-    let dy = y1 - y0;
-    let incy = if dy > 0 { 1 } else { -1 };
-    let mut y = y0;
-    let dacc = dy.abs() * 2;
-    let mut acc = 0;
-    for x in x0..=x1 {
-        if steep {
-            image.set(y, x, color).unwrap();
-        } else {
-            image.set(x, y, color).unwrap();
-        }
-        acc += dacc;
-        if acc > dx {
-            y += incy;
-            acc -= dx * 2;
-        }
-    }
-}
-
-pub fn draw_line (x0: i32, y0: i32, x1: i32, y1: i32, image: &mut TGAImage, color: TGAColor) {
-    // line_naive(x0, y0, x1, y1, image, color);
-    line_faster(x0, y0, x1, y1, image, color);
 }

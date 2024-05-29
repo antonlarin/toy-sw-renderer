@@ -1,101 +1,23 @@
 extern crate swrender;
 
-use swrender::draw_line;
-use swrender::math::{BndBox2, Point2, Point3, Vec3};
+use swrender::renderer::{Camera, draw_mesh_wireframe};
+use swrender::math::Vec3;
 use swrender::objmodel::ObjModel;
 use swrender::tgaimage::{tga_format, TGAColor, TGAImage};
 
-#[derive(Debug)]
-struct Camera {
-    dir: Vec3,
-    up: Vec3,
-    ref_dir: Vec3,
-}
-
-impl Camera {
-    fn new(dir: Vec3, up: Vec3) -> Camera {
-        let dir = dir.normalize();
-        if let Some(up) = up.orthogonalize(dir) {
-            let up = up.normalize();
-            let ref_dir = dir.cross(up);
-            Camera { dir, up, ref_dir }
-        } else {
-            panic!("Wrong params for camera given");
-        }
-    }
-}
-
-/// Projects a 3D point `pnt` onto a plane defined by isometric camera `cam`.
-/// The plane's origin is projection of 3D origin onto it.
-fn project(cam: &Camera, pnt: &Point3) -> Point2 {
-    let rad_vec: Vec3 = (*pnt).into();
-    let dp = rad_vec.dot(cam.dir);
-    let vec_in_plane = rad_vec - dp * cam.dir;
-    let y = vec_in_plane.dot(cam.up);
-    let x = vec_in_plane.dot(cam.ref_dir);
-    Point2 { x, y }
-}
-
+#[allow(unused_variables)]
 fn main() {
     let white: TGAColor = TGAColor::from_components(255, 255, 255, 255);
 
     const IMAGE_SIZE: i32 = 512;
     let mut image = TGAImage::with_size(IMAGE_SIZE, IMAGE_SIZE, tga_format::RGB);
     let model = ObjModel::from_file("assets/african_head.obj").unwrap();
-    let camera = Camera::new(
-        Vec3 {
-            x: -1.0,
-            y: -1.0,
-            z: -1.0,
-        },
-        Vec3 {
-            x: 0.0,
-            y: 0.0,
-            z: 1.0,
-        },
-    );
 
-    // Compute 2D camera plane coords of triangle edges
-    let mut pnt2s: Vec<Point2> = Vec::new();
-    for tri in model.triangles {
-        let vert1_iter = tri.vertices.into_iter();
-        let vert2_iter = tri.vertices.into_iter();
-        for (v1, v2) in vert1_iter.zip(vert2_iter.cycle().skip(1)) {
-            let p1 = model.vertices[v1 as usize - 1];
-            let p2 = model.vertices[v2 as usize - 1];
+    let camera_xp_yp_zp = Camera::new(
+        Vec3 { x: -1.0, y: -0.3, z: -1.0 },
+        Vec3 { x: 0.0, y: 1.0, z: 0.0 });
 
-            let pnt2_1 = project(&camera, &p1);
-            let pnt2_2 = project(&camera, &p2);
-            pnt2s.push(pnt2_1);
-            pnt2s.push(pnt2_2);
-        }
-    }
-
-    let mut bnd_box = BndBox2::new_empty();
-    for pnt2 in pnt2s.as_slice() {
-        bnd_box.add_point(*pnt2);
-    }
-    let range_vec = bnd_box.max - bnd_box.min;
-    const MARGIN_FACTOR: f32 = 1.05;
-    let range = range_vec.x.max(range_vec.y) * MARGIN_FACTOR;
-    let center = bnd_box.center();
-    for mut p in pnt2s.as_mut_slice() {
-        p.x = (p.x - center.x) / range * IMAGE_SIZE as f32 + (IMAGE_SIZE / 2) as f32;
-        p.y = (p.y - center.y) / range * IMAGE_SIZE as f32 + (IMAGE_SIZE / 2) as f32;
-    }
-
-    // Draw the edges
-    for i in (0..pnt2s.len()).step_by(2) {
-        let (p1, p2) = (pnt2s[i], pnt2s[i + 1]);
-        draw_line(
-            p1.x as i32,
-            p1.y as i32,
-            p2.x as i32,
-            p2.y as i32,
-            &mut image,
-            white,
-        );
-    }
+    draw_mesh_wireframe(&model, &camera_xp_yp_zp, &mut image, white);
 
     image.flip_vertically().unwrap();
     image.write_to_file("assets/output.tga").unwrap();

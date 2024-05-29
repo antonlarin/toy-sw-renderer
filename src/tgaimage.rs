@@ -133,8 +133,8 @@ impl TGAColor {
 #[derive(Debug)]
 pub struct TGAImage {
     data: Vec<u8>,
-    width: i32,
-    height: i32,
+    pub width: i32,
+    pub height: i32,
     bytespp: i32
 }
 
