@@ -17,3 +17,4 @@ fn main() {
     image.flip_vertically().unwrap();
     image.write_to_file("output.tga").unwrap();
 }
+
