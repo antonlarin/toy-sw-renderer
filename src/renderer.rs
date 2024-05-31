@@ -2,7 +2,7 @@ mod camera;
 mod lines;
 
 pub use camera::Camera;
-pub use lines::draw_line;
+pub use lines::{draw_line, line_pixels_iter, LinePixelsIterator};
 
 use crate::math::{BndBox2, Point2};
 use crate::objmodel::ObjModel;

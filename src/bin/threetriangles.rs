@@ -1,6 +1,6 @@
 extern crate swrender;
 
-use swrender::renderer::draw_line;
+use swrender::renderer::{draw_line, line_pixels_iter, LinePixelsIterator};
 use swrender::math::Point2;
 use swrender::tgaimage::{tga_format, TGAColor, TGAImage};
 
@@ -14,6 +14,11 @@ fn draw_triangle(v1: Point2, v2: Point2, v3: Point2, image: &mut TGAImage, color
     // Sort vertices of the triangle by their y-coordinates;
     // Rasterize simultaneously the left and the right sides of the triangle;
     // Draw a horizontal line segment between the left and the right boundary points.
+    let mut vs = [v1, v2, v3];
+    vs.sort_by(|p1, p2| p1.y.total_cmp(&p2.y));
+
+    let left_line_iter = line_pixels_iter(vs[0].x, vs[0].y, vs[1].x, vs[1].y);
+
 }
 
 fn main() {
