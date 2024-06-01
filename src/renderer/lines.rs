@@ -62,6 +62,7 @@ pub fn draw_line (x0: i32, y0: i32, x1: i32, y1: i32, image: &mut TGAImage, colo
     line_faster(x0, y0, x1, y1, image, color);
 }
 
+/*
 pub struct LinePixelsIterator {
     x: i32,
     y: i32,
@@ -136,6 +137,7 @@ impl Iterator for LinePixelsIterator {
 pub fn line_pixels_iter (x0: i32, y0: i32, x1: i32, y1: i32) -> LinePixelsIterator {
     LinePixelsIterator::new(x0, y0, x1, y1)
 }
+*/
 
 #[cfg(test)]
 mod test {
