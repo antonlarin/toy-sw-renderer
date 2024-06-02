@@ -2,25 +2,31 @@ use std::ops::{Add, Mul, Sub};
 
 const EPSILON: f32 = 1e-7;
 
+// TODO: consider carefully which operations make sense for integer-component
+// points and vecs
+
 #[derive(Clone, Copy, Debug)]
-pub struct Point2 {
-    pub x: f32,
-    pub y: f32,
+pub struct Point2<Scalar> {
+    pub x: Scalar,
+    pub y: Scalar,
 }
 
-impl Point2 {
+impl<Scalar : Default> Point2<Scalar> {
     pub fn origin() -> Self {
-        Self { x: 0.0, y: 0.0 }
+        Self { x: Scalar::default(), y: Scalar::default() }
     }
 }
 
-impl Sub for Point2 {
+impl<Scalar : Sub> Sub for Point2<Scalar> {
     type Output = Vec2;
 
     fn sub(self, rhs: Self) -> Self::Output {
         Self::Output { x: self.x - rhs.x, y: self.y - rhs.y }
     }
 }
+
+pub type Point2f = Point2<f32>;
+pub type Point2i = Point2<i32>;
 
 pub struct Vec2 {
     pub x: f32,
@@ -31,32 +37,35 @@ impl Vec2 {
 }
 
 #[derive(Clone, Copy, Debug)]
-pub struct Point3 {
-    pub x: f32,
-    pub y: f32,
-    pub z: f32,
+pub struct Point3<Scalar> {
+    pub x: Scalar,
+    pub y: Scalar,
+    pub z: Scalar,
 }
 
-impl Point3 {
+impl<Scalar : Default> Point3<Scalar> {
     pub fn origin() -> Self {
-        Point3 { x: 0f32, y: 0f32, z: 0f32 }
+        Point3 { x: Scalar::default(), y: Scalar::default(), z: Scalar::default() }
     }
 
-    pub fn from_slice(coord: &[f32]) -> Self {
+    pub fn from_slice(coord: &[Scalar]) -> Self {
         assert!(coord.len() == 3);
         Point3 { x: coord[0], y: coord[1], z: coord[2] }
     }
 
     pub fn to_vec3(&self) -> Vec3 {
-        Vec3 { x: self.x, y: self.y, z: self.z }
+        Vec3 { x: self.x as Scalar, y: self.y as Scalar, z: self.z as Scalar }
     }
 }
 
-impl From<Vec3> for Point3 {
+impl<Scalar> From<Vec3> for Point3<Scalar> {
     fn from(v: Vec3) -> Self {
         Point3 { x: v.x, y: v.y, z: v.z }
     }
 }
+
+pub type Point3f = Point3<f32>;
+pub type Point3i = Point3<i32>;
 
 #[derive(Clone, Copy, Debug)]
 pub struct Vec3 {
@@ -102,8 +111,8 @@ impl Vec3 {
 
 // TODO: add impl Add<Point3> for Vec3 and Add<Vec3> for Point3
 
-impl From<Point3> for Vec3 {
-    fn from(p: Point3) -> Self {
+impl From<Point3<f32>> for Vec3 {
+    fn from(p: Point3<f32>) -> Self {
         Self { x: p.x, y: p.y, z: p.z }
     }
 }
@@ -140,17 +149,17 @@ impl Mul<Vec3> for f32 {
     }
 }
 
-pub struct BndBox2 {
-    pub min: Point2,
-    pub max: Point2,
+pub struct BndBox2<Scalar> {
+    pub min: Point2<Scalar>,
+    pub max: Point2<Scalar>,
 }
 
-impl BndBox2 {
+impl<Scalar> BndBox2<Scalar> {
     pub fn new_empty() -> Self {
         Self { min: Point2::origin(), max: Point2::origin() }
     }
 
-    pub fn add_point(&mut self, pnt: Point2) {
+    pub fn add_point(&mut self, pnt: Point2<Scalar>) {
         if pnt.x < self.min.x { self.min.x = pnt.x; }
         else if pnt.x > self.max.x { self.max.x = pnt.x; }
 
@@ -158,7 +167,7 @@ impl BndBox2 {
         else if pnt.y > self.max.y { self.max.y = pnt.y; }
     }
 
-    pub fn center(&self) -> Point2 {
+    pub fn center(&self) -> Point2<Scalar> {
         Point2 { x: 0.5 * (self.min.x + self.max.x), y: 0.5 * (self.min.y + self.max.y) }
     }
 }

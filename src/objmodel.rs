@@ -1,6 +1,6 @@
 use std::fs::File;
 use std::io::{BufReader, BufRead};
-use crate::math::Point3;
+use crate::math::Point3f;
 
 #[derive(Debug)]
 pub struct Triangle {
@@ -9,7 +9,7 @@ pub struct Triangle {
 
 #[derive(Debug)]
 pub struct ObjModel {
-    pub vertices: Vec<Point3>,
+    pub vertices: Vec<Point3f>,
     pub triangles: Vec<Triangle>,
 }
 
@@ -53,7 +53,7 @@ impl ObjModel {
                             // not enough coords for vertex
                             continue;
                         } else {
-                            res.vertices.push(Point3::from_slice(&coord));
+                            res.vertices.push(Point3f::from_slice(&coord));
                         }
                     }
                 },

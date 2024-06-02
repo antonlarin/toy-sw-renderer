@@ -1,4 +1,4 @@
-use crate::math::{Point2, Point3, Vec3};
+use crate::math::{Point2f, Point3f, Vec3};
 #[derive(Debug)]
 pub struct Camera {
     dir: Vec3,
@@ -19,12 +19,12 @@ impl Camera {
     }
 
     /// Project a point in 3D space onto the camera plane
-    pub fn project_point(&self, pnt: &Point3) -> Point2 {
+    pub fn project_point(&self, pnt: &Point3f) -> Point2f {
         let rad_vec: Vec3 = (*pnt).into();
         let dp = rad_vec.dot(self.dir);
         let vec_in_plane = rad_vec - dp * self.dir;
         let y = vec_in_plane.dot(self.up);
         let x = vec_in_plane.dot(self.ref_dir);
-        Point2 { x, y }
+        Point2f { x, y }
     }
 }
