@@ -1,13 +1,13 @@
-use crate::math::{Point2f, Point3f, Vec3};
+use crate::math::{Point2f, Point3f, Vec3f};
 #[derive(Debug)]
 pub struct Camera {
-    dir: Vec3,
-    up: Vec3,
-    ref_dir: Vec3,
+    dir: Vec3f,
+    up: Vec3f,
+    ref_dir: Vec3f,
 }
 
 impl Camera {
-    pub fn new(dir: Vec3, up: Vec3) -> Camera {
+    pub fn new(dir: Vec3f, up: Vec3f) -> Camera {
         let dir = dir.normalize();
         if let Some(up) = up.orthogonalize(dir) {
             let up = up.normalize();
@@ -20,7 +20,7 @@ impl Camera {
 
     /// Project a point in 3D space onto the camera plane
     pub fn project_point(&self, pnt: &Point3f) -> Point2f {
-        let rad_vec: Vec3 = (*pnt).into();
+        let rad_vec: Vec3f = (*pnt).into();
         let dp = rad_vec.dot(self.dir);
         let vec_in_plane = rad_vec - dp * self.dir;
         let y = vec_in_plane.dot(self.up);

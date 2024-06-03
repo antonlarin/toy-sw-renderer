@@ -1,10 +1,12 @@
 mod camera;
 mod lines;
+mod triangle;
 
 pub use camera::Camera;
 pub use lines::draw_line;
+pub use triangle::draw_triangle;
 
-use crate::math::{BndBox2, Point2};
+use crate::math::{BndBox2f, Point2f};
 use crate::objmodel::ObjModel;
 use crate::tgaimage::{TGAColor, TGAImage};
 
@@ -13,7 +15,7 @@ pub fn draw_mesh_wireframe(model: &ObjModel,
                            image: &mut TGAImage,
                            color: TGAColor) {
     // Compute 2D camera plane coords of triangle edges
-    let mut pnt2s: Vec<Point2> = Vec::new();
+    let mut pnt2s: Vec<Point2f> = Vec::new();
     for tri in model.triangles.as_slice() {
         let vert1_iter = tri.vertices.into_iter();
         let vert2_iter = tri.vertices.into_iter();
@@ -28,7 +30,7 @@ pub fn draw_mesh_wireframe(model: &ObjModel,
         }
     }
 
-    let mut bnd_box = BndBox2::new_empty();
+    let mut bnd_box = BndBox2f::new_empty();
     for pnt2 in pnt2s.as_slice() {
         bnd_box.add_point(*pnt2);
     }
