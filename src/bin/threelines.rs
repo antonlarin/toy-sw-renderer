@@ -15,6 +15,6 @@ fn main() {
     draw_line(80, 40, 13, 20, &mut image, white);
 
     image.flip_vertically().unwrap();
-    image.write_to_file("output.tga").unwrap();
+    image.write_to_file("assets/threelines.tga").unwrap();
 }
 

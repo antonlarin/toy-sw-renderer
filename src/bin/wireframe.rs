@@ -20,5 +20,5 @@ fn main() {
     draw_mesh_wireframe(&model, &camera_xp_yp_zp, &mut image, white);
 
     image.flip_vertically().unwrap();
-    image.write_to_file("assets/output.tga").unwrap();
+    image.write_to_file("assets/wireframe.tga").unwrap();
 }
