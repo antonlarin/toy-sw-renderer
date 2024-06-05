@@ -4,6 +4,7 @@ The primary motivation is obviously to implement the software renderer, which ta
 
 TODOs:
 - Work out the `swrender` crate API to balance generality with ease of use in example binaries
+- Abstract away the dependency on TGA images: make `renderer` module functions draw to abstract framebuffer
 
 Possible extensions beyond the course material:
 - Render to some window in real-time rather than to an image file

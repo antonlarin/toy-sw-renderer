@@ -7,7 +7,7 @@ use swrender::tgaimage::{tga_format, TGAColor, TGAImage};
 
 #[allow(unused_variables)]
 fn main() {
-    let white: TGAColor = TGAColor::from_components(255, 255, 255, 255);
+    let white: TGAColor = TGAColor::from_rgb(255, 255, 255);
 
     const IMAGE_SIZE: i32 = 512;
     let mut image = TGAImage::with_size(IMAGE_SIZE, IMAGE_SIZE, tga_format::RGB);

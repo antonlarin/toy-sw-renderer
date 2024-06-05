@@ -64,6 +64,67 @@ pub fn draw_line (x0: i32, y0: i32, x1: i32, y1: i32, image: &mut TGAImage, colo
 
 #[cfg(test)]
 mod test {
-    // TODO: add tests checking that order of vertices in draw_line doesn't matter
-    // Types of lines: axis-aligned, different slopes, single-pixel line
+    use crate::tgaimage::{tga_format, TGAImage, TGAColor};
+    use super::draw_line;
+
+    fn setup_1_image() -> (TGAImage, TGAColor) {
+        (TGAImage::with_size(6, 6, tga_format::RGB),
+         TGAColor::from_rgb(255, 255, 255))
+    }
+
+    fn setup_2_images() -> (TGAImage, TGAImage, TGAColor) {
+        (TGAImage::with_size(6, 6, tga_format::RGB),
+         TGAImage::with_size(6, 6, tga_format::RGB),
+         TGAColor::from_rgb(255, 255, 255))
+    }
+
+    #[test]
+    fn draw_positive_sloped_line_is_symmetric() {
+        let (mut img1, mut img2, col) = setup_2_images();
+
+        draw_line(1, 2, 4, 5, &mut img1, col);
+        draw_line(4, 5, 1, 2, &mut img2, col);
+
+        assert_eq!(img1, img2);
+    }
+
+    #[test]
+    fn draw_negative_sloped_line_is_symmetric() {
+        let (mut img1, mut img2, col) = setup_2_images();
+
+        draw_line(2, 5, 4, 1, &mut img1, col);
+        draw_line(4, 1, 2, 5, &mut img2, col);
+
+        assert_eq!(img1, img2);
+    }
+
+    #[test]
+    fn draw_x_aligned_line() {
+        let (mut img, col) = setup_1_image();
+        let black = TGAColor::from_rgb(0, 0, 0);
+
+        draw_line(0, 3, 5, 3, &mut img, col);
+
+        for y in 0..img.height {
+            let expected_col = if y == 3 { col } else { black };
+            for x in 0..img.width {
+                assert_eq!(img.get(x, y).unwrap(), expected_col, "@ ({}, {})", x, y);
+            }
+        }
+    }
+
+    #[test]
+    fn draw_y_aligned_line() {
+        let (mut img, col) = setup_1_image();
+        let black = TGAColor::from_rgb(0, 0, 0);
+
+        draw_line(2, 0, 2, 5, &mut img, col);
+
+        for x in 0..img.width {
+            let expected_col = if x == 2 { col } else { black };
+            for y in 0..img.height {
+                assert_eq!(img.get(x, y).unwrap(), expected_col, "@ ({}, {})", x, y);
+            }
+        }
+    }
 }

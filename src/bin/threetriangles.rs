@@ -5,9 +5,9 @@ use swrender::math::Point2i;
 use swrender::tgaimage::{tga_format, TGAColor, TGAImage};
 
 fn main() {
-    let white: TGAColor = TGAColor::from_components(255, 255, 255, 255);
-    let red: TGAColor = TGAColor::from_components(255, 0, 0, 255);
-    let green: TGAColor = TGAColor::from_components(0, 255, 0, 255);
+    let white: TGAColor = TGAColor::from_rgb(255, 255, 255);
+    let red: TGAColor = TGAColor::from_rgb(255, 0, 0);
+    let green: TGAColor = TGAColor::from_rgb(0, 255, 0);
 
     let mut image = TGAImage::with_size(200, 200, tga_format::RGB);
 

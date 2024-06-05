@@ -79,28 +79,27 @@ impl TGAHeader {
     }
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub struct TGAColor {
     val: [u8; 4],
-    bytespp: i32
+    bytespp: i32,
 }
 
 impl TGAColor {
-    pub fn new() -> TGAColor {
+    pub fn from_rgb(r: u8, g: u8, b: u8) -> TGAColor {
         TGAColor {
-            val: [0; 4],
-            bytespp: 1
+            val: [b, g, r, 0],
+            bytespp: 3,
         }
     }
-
-    pub fn from_components(r: u8, g: u8, b: u8, a: u8) -> TGAColor {
+    pub fn from_rgba(r: u8, g: u8, b: u8, a: u8) -> TGAColor {
         TGAColor {
             val: [b, g, r, a],
-            bytespp: 1
+            bytespp: 4,
         }
     }
 
-    pub fn from_packed_components(v: i32, bpp: i32) -> TGAColor {
+    pub fn from_packed_components(v: i32) -> TGAColor {
         let uv = v as u32;
         let b = ((uv >> 24) & 0xFF) as u8;
         let g = ((uv >> 16) & 0xFF) as u8;
@@ -108,7 +107,7 @@ impl TGAColor {
         let a = ( uv        & 0xFF) as u8;
         TGAColor {
             val: [b, g, r, a],
-            bytespp: bpp
+            bytespp: 4,
         }
     }
 
@@ -120,7 +119,7 @@ impl TGAColor {
 
         TGAColor {
             val: values,
-            bytespp: bpp
+            bytespp: bpp,
         }
     }
 
@@ -130,7 +129,7 @@ impl TGAColor {
     pub fn a(&self) -> u8 { self.val[3] }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct TGAImage {
     data: Vec<u8>,
     pub width: i32,
@@ -379,13 +378,13 @@ mod tests {
     #[test]
     fn set() {
         let mut image = TGAImage::with_size(5, 5, tga_format::RGBA);
-        image.set(1, 2, TGAColor::from_components(255, 0, 0, 255)).unwrap();
+        image.set(1, 2, TGAColor::from_rgba(255, 0, 0, 255)).unwrap();
         assert_eq!(image.data[46], 255);
     }
 
     #[test]
     fn get() {
-        let mut image = TGAImage {
+        let image = TGAImage {
             data: vec![
                 0, 0, 0,   0, 0, 0,
                 0, 0, 0,   0, 0, 0,
