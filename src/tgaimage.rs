@@ -315,7 +315,7 @@ impl TGAImage {
         Ok(())
     }
 
-    fn clear(&mut self) {
+    pub fn clear(&mut self) {
         self.data.fill(0_u8);
     }
 }

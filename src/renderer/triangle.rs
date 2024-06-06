@@ -3,10 +3,6 @@ use crate::tgaimage::{TGAColor, TGAImage};
 use super::draw_line;
 
 pub fn draw_triangle(v1: Point2i, v2: Point2i, v3: Point2i, image: &mut TGAImage, color: TGAColor) {
-    draw_line(v1.x, v1.y, v2.x, v2.y, image, color);
-    draw_line(v2.x, v2.y, v3.x, v3.y, image, color);
-    draw_line(v3.x, v3.y, v1.x, v1.y, image, color);
-
     if v1.y == v2.y && v2.y == v3.y {
         draw_line(v1.x.min(v2.x.min(v3.x)), v1.y, v1.x.max(v2.x.max(v3.x)), v1.y, image, color);
         return
@@ -56,8 +52,101 @@ pub fn draw_triangle(v1: Point2i, v2: Point2i, v3: Point2i, image: &mut TGAImage
 
 #[cfg(test)]
 mod test {
-    // TODO:
-    // * add unit tests
-    // * add benchmark? gonna need nightly rust though
+    use super::{draw_triangle, TGAImage, TGAColor, Point2i};
+    use crate::tgaimage::tga_format;
+
+    fn setup_1_image() -> (TGAImage, TGAColor) {
+        (TGAImage::with_size(6, 6, tga_format::RGB),
+         TGAColor::from_rgb(255, 255, 255))
+    }
+
+    fn setup_2_images() -> (TGAImage, TGAImage, TGAColor) {
+        (TGAImage::with_size(6, 6, tga_format::RGB),
+         TGAImage::with_size(6, 6, tga_format::RGB),
+         TGAColor::from_rgb(255, 255, 255))
+    }
+
+    #[test]
+    fn different_vertex_order() {
+        let (mut img1, mut img2, col) = setup_2_images();
+
+        let v1 = Point2i { x: 3, y: 0 };
+        let v2 = Point2i { x: 5, y: 5 };
+        let v3 = Point2i { x: 1, y: 3 };
+        draw_triangle(v1, v2, v3, &mut img1, col);
+        draw_triangle(v1, v3, v2, &mut img2, col);
+
+        assert_eq!(img1, img2);
+    }
+
+    #[test]
+    fn degenerate_x_triangle() {
+        let (mut img, col) = setup_1_image();
+        let black = TGAColor::from_rgb(0, 0, 0);
+
+        let v1 = Point2i { x: 0, y: 3 };
+        let v2 = Point2i { x: 3, y: 3 };
+        let v3 = Point2i { x: 5, y: 3 };
+
+        draw_triangle(v1, v2, v3, &mut img, col);
+
+        for y in 0..img.height {
+            let expected_col = if y == 3 { col } else { black };
+            for x in 0..img.width {
+                assert_eq!(img.get(x, y).unwrap(), expected_col, "@ ({}, {})", x, y);
+            }
+        }
+    }
+
+    #[test]
+    fn degenerate_y_triangle() {
+        let (mut img, col) = setup_1_image();
+        let black = TGAColor::from_rgb(0, 0, 0);
+
+        let v1 = Point2i { x: 2, y: 0 };
+        let v2 = Point2i { x: 2, y: 5 };
+        let v3 = Point2i { x: 2, y: 2 };
+
+        draw_triangle(v1, v2, v3, &mut img, col);
+
+        for x in 0..img.width {
+            let expected_col = if x == 2 { col } else { black };
+            for y in 0..img.height {
+                assert_eq!(img.get(x, y).unwrap(), expected_col, "@ ({}, {})", x, y);
+            }
+        }
+    }
+
+    #[test]
+    fn corner_right_triangles() {
+        let (mut img, col) = setup_1_image();
+        let black = TGAColor::from_rgb(0, 0, 0);
+
+        let vs = [
+            Point2i { x: 0, y: 0 },
+            Point2i { x: 5, y: 0 },
+            Point2i { x: 5, y: 5 },
+            Point2i { x: 0, y: 5 },
+        ];
+        let preds = [
+            |x, y| x >= y,
+            |x, y| x + y >= 5,
+            |x, y| y >= x,
+            |x, y| x + y <= 5,
+        ];
+
+        for i in 0..4 {
+            draw_triangle(vs[i], vs[(i + 1) % 4], vs[(i + 2) % 4], &mut img, col);
+
+            for x in 0..img.width {
+                for y in 0..img.height {
+                    let expected_col = if preds[i](x, y) { col } else { black };
+                    assert_eq!(img.get(x, y).unwrap(), expected_col, "@ ({}, {}) triangle at corner {}", x, y, i);
+                }
+            }
+
+            img.clear();
+        }
+    }
 }
 
