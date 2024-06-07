@@ -27,7 +27,9 @@ pub fn draw_triangle(v1: Point2i, v2: Point2i, v3: Point2i, image: &mut TGAImage
         let left_x = apex.x + (left.x - apex.x) * (y - apex.y) / (left.y - apex.y);
         let right_x = apex.x + (right.x - apex.x) * (y - apex.y) / (right.y - apex.y);
 
-        draw_line(left_x, y, right_x, y, image, color);
+        for x in left_x..=right_x {
+            image.set(x, y, color).unwrap();
+        }
     }
 
     // second half of triangles does not exist here
@@ -46,7 +48,9 @@ pub fn draw_triangle(v1: Point2i, v2: Point2i, v3: Point2i, image: &mut TGAImage
         let left_x = apex.x + (left.x - apex.x) * (y - apex.y) / (left.y - apex.y);
         let right_x = apex.x + (right.x - apex.x) * (y - apex.y) / (right.y - apex.y);
 
-        draw_line(left_x, y, right_x, y, image, color);
+        for x in left_x..=right_x {
+            image.set(x, y, color).unwrap();
+        }
     }
 }
 
