@@ -129,7 +129,7 @@ impl TGAColor {
     pub fn a(&self) -> u8 { self.val[3] }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct TGAImage {
     data: Vec<u8>,
     pub width: i32,

@@ -1,7 +1,7 @@
-mod camera;
-mod line;
-mod mesh_wireframe;
-mod triangle;
+pub mod camera;
+pub mod line;
+pub mod mesh_wireframe;
+pub mod triangle;
 
 pub use camera::Camera;
 pub use line::draw_line;

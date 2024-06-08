@@ -1,7 +1,7 @@
 use crate::tgaimage::{TGAColor, TGAImage};
 
 #[allow(dead_code)]
-fn line_naive(mut x0: i32, mut y0: i32, mut x1: i32, mut y1: i32, image: &mut TGAImage, color: TGAColor) {
+pub fn draw_line_naive(mut x0: i32, mut y0: i32, mut x1: i32, mut y1: i32, image: &mut TGAImage, color: TGAColor) {
     let mut steep = false;
     if (x1 - x0).abs() < (y1 - y0).abs() {
         std::mem::swap(&mut x0, &mut y0);
@@ -24,7 +24,7 @@ fn line_naive(mut x0: i32, mut y0: i32, mut x1: i32, mut y1: i32, image: &mut TG
     }
 }
 
-fn line_faster(mut x0: i32, mut y0: i32, mut x1: i32, mut y1: i32, image: &mut TGAImage, color: TGAColor) {
+pub fn draw_line_faster(mut x0: i32, mut y0: i32, mut x1: i32, mut y1: i32, image: &mut TGAImage, color: TGAColor) {
     let mut steep = false;
     if (x1 - x0).abs() < (y1 - y0).abs() {
         std::mem::swap(&mut x0, &mut y0);
@@ -59,7 +59,7 @@ fn line_faster(mut x0: i32, mut y0: i32, mut x1: i32, mut y1: i32, image: &mut T
 
 pub fn draw_line (x0: i32, y0: i32, x1: i32, y1: i32, image: &mut TGAImage, color: TGAColor) {
     // line_naive(x0, y0, x1, y1, image, color);
-    line_faster(x0, y0, x1, y1, image, color);
+    draw_line_faster(x0, y0, x1, y1, image, color);
 }
 
 #[cfg(test)]

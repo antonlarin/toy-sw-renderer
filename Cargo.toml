@@ -7,5 +7,18 @@ edition = "2021"
 name = "swrender"
 path = "src/lib.rs"
 
+[dev-dependencies]
+criterion = "0.3"
+
+[[bench]]
+name = "line-bench"
+harness = false
+path = "benches/line_bench.rs"
+
+[[bench]]
+name = "triangle-bench"
+harness = false
+path = "benches/triangle_bench.rs"
+
 [profile.release]
 debug = 1
