@@ -1,21 +1,26 @@
 use crate::math::Point2i;
 use crate::tgaimage::{TGAColor, TGAImage};
-use super::draw_line;
 
 pub fn draw_triangle(v1: Point2i, v2: Point2i, v3: Point2i, image: &mut TGAImage, color: TGAColor) {
     if v1.y == v2.y && v2.y == v3.y {
-        draw_line(v1.x.min(v2.x.min(v3.x)), v1.y, v1.x.max(v2.x.max(v3.x)), v1.y, image, color);
+        let start = v1.x.min(v2.x.min(v3.x));
+        let end = v1.x.max(v2.x.max(v3.x));
+        for x in start..=end {
+            image.set(x, v1.y, color).unwrap();
+        }
         return
     }
 
-    let mut vs = [v1, v2, v3];
-    vs.sort_by_key(|p| p.y);
+    let (mut p1, mut p2, mut p3) = (v1, v2, v3);
+    if p2.y < p1.y { std::mem::swap(&mut p1, &mut p2); }
+    if p3.y < p2.y { std::mem::swap(&mut p2, &mut p3); }
+    if p2.y < p1.y { std::mem::swap(&mut p1, &mut p2); }
 
-    let upside_down = vs[0].y == vs[1].y;
+    let upside_down = p1.y == p2.y;
     let (mut apex, mut left, mut right) = if upside_down {
-        (vs[2], vs[0], vs[1])
+        (p3, p1, p2)
     } else {
-        (vs[0], vs[1], vs[2])
+        (p1, p2, p3)
     };
     if left.x > right.x {
         std::mem::swap(&mut left, &mut right);
