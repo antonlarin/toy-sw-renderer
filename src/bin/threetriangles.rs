@@ -27,6 +27,6 @@ fn main() {
     draw_triangle(v3_1, v3_2, v3_3, &mut image, red);
 
     image.flip_vertically().unwrap();
-    image.write_to_file("assets/threetriangles.tga").unwrap();
+    image.write_to_file("assets/threetriangles-tmp.tga").unwrap();
 }
 

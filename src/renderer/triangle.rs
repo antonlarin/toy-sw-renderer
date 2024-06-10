@@ -2,58 +2,38 @@ use crate::math::Point2i;
 use crate::tgaimage::{TGAColor, TGAImage};
 
 pub fn draw_triangle(v1: Point2i, v2: Point2i, v3: Point2i, image: &mut TGAImage, color: TGAColor) {
-    if v1.y == v2.y && v2.y == v3.y {
-        let start = v1.x.min(v2.x.min(v3.x));
-        let end = v1.x.max(v2.x.max(v3.x));
-        for x in start..=end {
-            image.set(x, v1.y, color).unwrap();
-        }
-        return
-    }
-
     let (mut p1, mut p2, mut p3) = (v1, v2, v3);
     if p2.y < p1.y { std::mem::swap(&mut p1, &mut p2); }
     if p3.y < p2.y { std::mem::swap(&mut p2, &mut p3); }
     if p2.y < p1.y { std::mem::swap(&mut p1, &mut p2); }
 
-    let upside_down = p1.y == p2.y;
-    let (mut apex, mut left, mut right) = if upside_down {
-        (p3, p1, p2)
-    } else {
-        (p1, p2, p3)
-    };
-    if left.x > right.x {
-        std::mem::swap(&mut left, &mut right);
-    }
-
-    // draw first half of the triangle: 'apex' to 'closest to apex by y from left, right'
-    let apex_range = if upside_down { left.y.max(right.y)..=apex.y } else { apex.y..=left.y.min(right.y) };
-    for y in apex_range {
-        let left_x = apex.x + (left.x - apex.x) * (y - apex.y) / (left.y - apex.y);
-        let right_x = apex.x + (right.x - apex.x) * (y - apex.y) / (right.y - apex.y);
-
-        for x in left_x..=right_x {
+    let mut pl = p2;
+    let mut pr = p3;
+    if pl.x > pr.x { std::mem::swap(&mut pl, &mut pr); } // TODO: wrong for thin triangles
+    let lmul = if pl.y == p1.y { 1 } else { (pl.x - p1.x) / (pl.y - p1.y) };
+    let rmul = if pr.y == p1.y { 1 } else { (pr.x - p1.x) / (pr.y - p1.y) };
+    for y in p1.y..p2.y {
+        let xl = p1.x + (y - p1.y) * lmul;
+        let xr = p1.x + (y - p1.y) * rmul;
+        for x in xl..=xr {
             image.set(x, y, color).unwrap();
         }
     }
 
-    // second half of triangles does not exist here
-    if left.y == right.y {
-        return
-    }
+    pl = p1;
+    pr = p2;
+    if pl.x > pr.x { std::mem::swap(&mut pl, &mut pr); } // TODO: wrong for thin triangles
+    for y in p2.y..=p3.y {
+        let mut xl = p3.x;
+        let mut xr = p3.x;
+        if pl.y - p3.y != 0 {
+            xl += (y - p3.y) * (pl.x - p3.x) / (pl.y - p3.y)
+        }
+        if pr.y - p3.y != 0 {
+            xr += (y - p3.y) * (pr.x - p3.x) / (pr.y - p3.y)
+        }
 
-    // draw second half of the triangle: 'closest to apex' to 'furthest from apex'
-    let bottom_range = left.y.min(right.y)..=left.y.max(right.y);
-    if left.y < right.y {
-        std::mem::swap(&mut right, &mut apex);
-    } else /* left.y > right.y */ {
-        std::mem::swap(&mut left, &mut apex);
-    }
-    for y in bottom_range {
-        let left_x = apex.x + (left.x - apex.x) * (y - apex.y) / (left.y - apex.y);
-        let right_x = apex.x + (right.x - apex.x) * (y - apex.y) / (right.y - apex.y);
-
-        for x in left_x..=right_x {
+        for x in xl..=xr {
             image.set(x, y, color).unwrap();
         }
     }
