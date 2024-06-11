@@ -7,32 +7,37 @@ pub fn draw_triangle(v1: Point2i, v2: Point2i, v3: Point2i, image: &mut TGAImage
     if p3.y < p2.y { std::mem::swap(&mut p2, &mut p3); }
     if p2.y < p1.y { std::mem::swap(&mut p1, &mut p2); }
 
-    let mut pl = p2;
-    let mut pr = p3;
-    if pl.x > pr.x { std::mem::swap(&mut pl, &mut pr); } // TODO: wrong for thin triangles
-    let lmul = if pl.y == p1.y { 1 } else { (pl.x - p1.x) / (pl.y - p1.y) };
-    let rmul = if pr.y == p1.y { 1 } else { (pr.x - p1.x) / (pr.y - p1.y) };
+    // TODO: fix x-degen triangle
+    // TODO: fix corner tests
+    let mut lmul = if p2.y == p1.y { (1, 1) } else { (p2.x - p1.x, p2.y - p1.y) };
+    let mut rmul = if p3.y == p1.y { (1, 1) } else { (p3.x - p1.x, p3.y - p1.y) };
+    {
+        let ltest = p1.x + 1 * lmul.0 / lmul.1;
+        let rtest = p1.x + 1 * rmul.0 / rmul.1;
+        if ltest > rtest {
+            std::mem::swap(&mut lmul, &mut rmul);
+        }
+    }
     for y in p1.y..p2.y {
-        let xl = p1.x + (y - p1.y) * lmul;
-        let xr = p1.x + (y - p1.y) * rmul;
+        let xl = p1.x + (y - p1.y) * lmul.0 / lmul.1;
+        let xr = p1.x + (y - p1.y) * rmul.0 / rmul.1;
         for x in xl..=xr {
             image.set(x, y, color).unwrap();
         }
     }
 
-    pl = p1;
-    pr = p2;
-    if pl.x > pr.x { std::mem::swap(&mut pl, &mut pr); } // TODO: wrong for thin triangles
+    lmul = if p1.y == p3.y { (1, 1) } else { (p1.x - p3.x, p1.y - p3.y) };
+    rmul = if p2.y == p3.y { (1, 1) } else { (p2.x - p3.x, p2.y - p3.y) };
+    {
+        let ltest = p3.x - 1 * lmul.0 / lmul.1;
+        let rtest = p3.x - 1 * rmul.0 / rmul.1;
+        if ltest > rtest {
+            std::mem::swap(&mut lmul, &mut rmul);
+        }
+    }
     for y in p2.y..=p3.y {
-        let mut xl = p3.x;
-        let mut xr = p3.x;
-        if pl.y - p3.y != 0 {
-            xl += (y - p3.y) * (pl.x - p3.x) / (pl.y - p3.y)
-        }
-        if pr.y - p3.y != 0 {
-            xr += (y - p3.y) * (pr.x - p3.x) / (pr.y - p3.y)
-        }
-
+        let xl = p3.x + (y - p3.y) * lmul.0 / lmul.1;
+        let xr = p3.x + (y - p3.y) * rmul.0 / rmul.1;
         for x in xl..=xr {
             image.set(x, y, color).unwrap();
         }
@@ -70,14 +75,17 @@ mod test {
 
     #[test]
     fn degenerate_x_triangle() {
-        let (mut img, col) = setup_1_image();
+        let mut img = TGAImage::with_size(32, 32, tga_format::RGB);
+        let col = TGAColor::from_rgb(255, 255, 255);
+        // let (mut img, col) = setup_1_image();
         let black = TGAColor::from_rgb(0, 0, 0);
 
-        let v1 = Point2i { x: 0, y: 3 };
-        let v2 = Point2i { x: 3, y: 3 };
-        let v3 = Point2i { x: 5, y: 3 };
+        let v1 = Point2i { x: 0, y: 16 };
+        let v2 = Point2i { x: 14, y: 16 };
+        let v3 = Point2i { x: 31, y: 16 };
 
         draw_triangle(v1, v2, v3, &mut img, col);
+        img.write_to_file("assets/test_degen_x.tga").unwrap();
 
         for y in 0..img.height {
             let expected_col = if y == 3 { col } else { black };
@@ -97,6 +105,7 @@ mod test {
         let v3 = Point2i { x: 2, y: 2 };
 
         draw_triangle(v1, v2, v3, &mut img, col);
+        img.write_to_file("assets/test_degen_y.tga").unwrap();
 
         for x in 0..img.width {
             let expected_col = if x == 2 { col } else { black };
@@ -126,6 +135,7 @@ mod test {
 
         for i in 0..4 {
             draw_triangle(vs[i], vs[(i + 1) % 4], vs[(i + 2) % 4], &mut img, col);
+            img.write_to_file(format!("assets/test_corner_tri_{}.tga", i).as_str()).unwrap();
 
             for x in 0..img.width {
                 for y in 0..img.height {
