@@ -169,6 +169,7 @@ impl Mul<Vec3<i32>> for i32 {
 pub struct BndBox2<Scalar> {
     pub min: Point2<Scalar>,
     pub max: Point2<Scalar>,
+    empty: bool,
 }
 
 pub type BndBox2f = BndBox2<f32>;
@@ -183,10 +184,16 @@ impl<S> BndBox2<S> where
        Div<Output = S> +
        From<u8> {
     pub fn new_empty() -> Self {
-        Self { min: Point2::origin(), max: Point2::origin() }
+        Self { min: Point2::origin(), max: Point2::origin(), empty: true }
     }
 
     pub fn add_point(&mut self, pnt: Point2<S>) {
+        if self.empty {
+            self.empty = false;
+            self.min = pnt;
+            self.max = pnt;
+        }
+
         if pnt.x < self.min.x { self.min.x = pnt.x; }
         else if pnt.x > self.max.x { self.max.x = pnt.x; }
 

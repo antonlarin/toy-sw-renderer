@@ -1,7 +1,7 @@
-use crate::math::Point2i;
+use crate::math::{BndBox2i, Point2i};
 use crate::tgaimage::{TGAColor, TGAImage};
 
-pub fn draw_triangle(v1: Point2i, v2: Point2i, v3: Point2i, image: &mut TGAImage, color: TGAColor) {
+pub fn draw_triangle_sweep(v1: Point2i, v2: Point2i, v3: Point2i, image: &mut TGAImage, color: TGAColor) {
     // handle degenerate triangle first
     if v1.y == v2.y && v2.y == v3.y {
         let xl = v1.x.min(v2.x.min(v3.x));
@@ -34,6 +34,30 @@ pub fn draw_triangle(v1: Point2i, v2: Point2i, v3: Point2i, image: &mut TGAImage
             image.set(x, p1.y + i, color).unwrap();
         }
     }
+}
+
+#[allow(dead_code)]
+pub fn draw_triangle_parallel(v1: Point2i, v2: Point2i, v3: Point2i, image: &mut TGAImage, color: TGAColor) {
+    let mut bbox = BndBox2i::new_empty();
+    bbox.add_point(v1);
+    bbox.add_point(v2);
+    bbox.add_point(v3);
+
+    // try rayon
+    for x in bbox.min.x..=bbox.max.x {
+        for y in bbox.min.y..=bbox.max.y {
+            let (u, v, w) = (0, 0, 0);
+            // compute barycentric coords
+
+            if u >= 0 && v >= 0 && w >= 0 {
+                image.set(x, y, color).unwrap();
+            }
+        }
+    }
+}
+
+pub fn draw_triangle(v1: Point2i, v2: Point2i, v3: Point2i, image: &mut TGAImage, color: TGAColor) {
+    draw_triangle_sweep(v1, v2, v3, image, color);
 }
 
 #[cfg(test)]
