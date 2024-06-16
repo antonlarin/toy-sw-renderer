@@ -27,6 +27,6 @@ fn main() {
     draw_triangle(v3_1, v3_2, v3_3, &mut image, red);
 
     image.flip_vertically().unwrap();
-    image.write_to_file("assets/threetriangles-barycentric.tga").unwrap();
+    image.write_to_file("assets/threetriangles-parallel.tga").unwrap();
 }
 

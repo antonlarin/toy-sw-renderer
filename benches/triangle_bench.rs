@@ -1,5 +1,5 @@
 use criterion::{criterion_group, criterion_main, Criterion, BatchSize};
-use swrender::renderer::triangle::draw_triangle;
+use swrender::renderer::triangle::{draw_triangle_parallel, draw_triangle_sweep};
 use swrender::tgaimage::{TGAImage, TGAColor};
 use swrender::math::Point2i;
 
@@ -13,12 +13,18 @@ pub fn line_benchmark(c: &mut Criterion) {
     let setup = || (image.clone(), color);
     let mut group = c.benchmark_group("draw_triangle");
 
-    group.bench_function("naive", |b| b.iter_batched_ref(
-            setup,
-            |(ref mut image, color)| {
-                draw_triangle(v1, v2, v3, image, *color)
-            },
-            BatchSize::SmallInput));
+    group.bench_function("sweep", |b| b.iter_batched_ref(
+        setup,
+        |(ref mut image, color)| {
+            draw_triangle_sweep(v1, v2, v3, image, *color)
+        },
+        BatchSize::SmallInput));
+    group.bench_function("parallel", |b| b.iter_batched_ref(
+        setup,
+        |(ref mut image, color)| {
+            draw_triangle_parallel(v1, v2, v3, image, *color)
+        },
+        BatchSize::SmallInput));
 }
 
 criterion_group!(benches, line_benchmark);

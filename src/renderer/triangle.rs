@@ -1,6 +1,7 @@
-use crate::math::{BndBox2i, Point2i};
+use crate::math::{BndBox2i, Point2i, Vec3f, Vec3i};
 use crate::tgaimage::{TGAColor, TGAImage};
 
+#[allow(dead_code)]
 pub fn draw_triangle_sweep(v1: Point2i, v2: Point2i, v3: Point2i, image: &mut TGAImage, color: TGAColor) {
     // handle degenerate triangle first
     if v1.y == v2.y && v2.y == v3.y {
@@ -36,20 +37,50 @@ pub fn draw_triangle_sweep(v1: Point2i, v2: Point2i, v3: Point2i, image: &mut TG
     }
 }
 
-#[allow(dead_code)]
 pub fn draw_triangle_parallel(v1: Point2i, v2: Point2i, v3: Point2i, image: &mut TGAImage, color: TGAColor) {
+    if v1.y == v2.y && v2.y == v3.y {
+        let xl = v1.x.min(v2.x.min(v3.x));
+        let xr = v1.x.max(v2.x.max(v3.x));
+        for x in xl..=xr { image.set(x, v1.y, color).unwrap(); }
+        return;
+    } else if v1.x == v2.x && v2.x == v3.x {
+        let yt = v1.y.min(v2.y.min(v3.y));
+        let yb = v1.y.max(v2.y.max(v3.y));
+        for y in yt..=yb { image.set(v1.x, y, color).unwrap(); }
+        return;
+    }
+
+
     let mut bbox = BndBox2i::new_empty();
     bbox.add_point(v1);
     bbox.add_point(v2);
     bbox.add_point(v3);
 
+    let is_inside = |p: Point2i| {
+        // solve linear eqn: p = 1 * v1 + u * v2 + v * v3;
+        let aux1 = Vec3i { x: v2.x - v1.x, y: v3.x - v1.x, z: v1.x - p.x };
+        let aux2 = Vec3i { x: v2.y - v1.y, y: v3.y - v1.y, z: v1.y - p.y };
+        let solution = aux1.cross(aux2);
+        if solution.z == 0 {
+            return false
+        }
+
+        let barycentric = Vec3f {
+            x: 1.0f32 - (solution.x + solution.y) as f32 / solution.z as f32,
+            y: solution.x as f32 / solution.z as f32,
+            z: solution.y as f32 / solution.z as f32,
+        };
+        if barycentric.x < 0.0 || barycentric.y < 0.0 || barycentric.z < 0.0 {
+            return false
+        } else {
+            return true
+        }
+    };
+
     // try rayon
     for x in bbox.min.x..=bbox.max.x {
         for y in bbox.min.y..=bbox.max.y {
-            let (u, v, w) = (0, 0, 0);
-            // compute barycentric coords
-
-            if u >= 0 && v >= 0 && w >= 0 {
+            if is_inside(Point2i { x, y }) {
                 image.set(x, y, color).unwrap();
             }
         }
@@ -57,7 +88,7 @@ pub fn draw_triangle_parallel(v1: Point2i, v2: Point2i, v3: Point2i, image: &mut
 }
 
 pub fn draw_triangle(v1: Point2i, v2: Point2i, v3: Point2i, image: &mut TGAImage, color: TGAColor) {
-    draw_triangle_sweep(v1, v2, v3, image, color);
+    draw_triangle_parallel(v1, v2, v3, image, color);
 }
 
 #[cfg(test)]

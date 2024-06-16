@@ -81,9 +81,18 @@ pub type Vec3i = Vec3<i32>;
 impl<Scalar> Vec3<Scalar> where
     Scalar: Mul<Output = Scalar> +
             Add<Output = Scalar> +
+            Sub<Output = Scalar> +
             Copy {
     pub fn dot(&self, other: Self) -> Scalar {
         self.x * other.x + self.y * other.y + self.z * other.z
+    }
+
+    pub fn cross(&self, other: Self) -> Self {
+        Self {
+            x: self.y * other.z - self.z * other.y,
+            y: self.z * other.x - self.x * other.z,
+            z: self.x * other.y - self.y * other.x,
+        }
     }
 }
 
@@ -106,14 +115,6 @@ impl Vec3<f32> {
             None
         } else {
             Some(res)
-        }
-    }
-
-    pub fn cross(&self, other: Self) -> Self {
-        Self {
-            x: self.y * other.z - self.z * other.y,
-            y: self.z * other.x - self.x * other.z,
-            z: self.x * other.y - self.y * other.x,
         }
     }
 }
