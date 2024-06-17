@@ -1,5 +1,6 @@
 use crate::math::{BndBox2i, Point2i, Vec3f, Vec3i};
 use crate::tgaimage::{TGAColor, TGAImage};
+use rayon::prelude::*;
 
 #[allow(dead_code)]
 pub fn draw_triangle_sweep(v1: Point2i, v2: Point2i, v3: Point2i, image: &mut TGAImage, color: TGAColor) {
@@ -77,7 +78,7 @@ pub fn draw_triangle_parallel(v1: Point2i, v2: Point2i, v3: Point2i, image: &mut
         }
     };
 
-    // try rayon
+    // TODO: try to parallelize with rayon
     for x in bbox.min.x..=bbox.max.x {
         for y in bbox.min.y..=bbox.max.y {
             if is_inside(Point2i { x, y }) {

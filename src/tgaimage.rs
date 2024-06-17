@@ -2,6 +2,7 @@ use core::result::Result;
 use std::convert::From;
 use std::fs::File;
 use std::io::{BufWriter, Write};
+use rayon::prelude::*;
 
 pub mod tga_format {
     pub const GRAYSCALE: i32 = 1;
@@ -313,6 +314,23 @@ impl TGAImage {
         self.data[offset..(offset + bpp)].copy_from_slice(&c.val[..bpp]);
 
         Ok(())
+    }
+
+    // TODO: think about it some more
+    pub fn set_in_block<S>(&mut self, x0: i32, x1: i32, y0: i32, y1: i32, setter: S)
+    where S: Fn(i32, i32, &mut [u8]) {
+        let mut data = self.data.as_mut_slice();
+        let line_block_start = (y0 * self.width) as usize;
+        let line_block_end = ((y1 + 1) * self.width) as usize;
+        data[line_block_start..line_block_end].par_iter_mut()
+                                              .enumerate()
+                                              .map(|(i, v)| {
+                                                  (i as i32 % self.width,
+                                                   i as i32 / self.width + y0,
+                                                   v)
+                                              })
+                                              .filter(|(x, y, v)| x >= x0 && x <= x1)
+                                              .for_each;
     }
 
     pub fn clear(&mut self) {
