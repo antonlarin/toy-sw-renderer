@@ -317,6 +317,7 @@ impl TGAImage {
     }
 
     // TODO: think about it some more
+    /*
     pub fn set_in_block<S>(&mut self, x0: i32, x1: i32, y0: i32, y1: i32, setter: S)
     where S: Fn(i32, i32, &mut [u8]) {
         let mut data = self.data.as_mut_slice();
@@ -332,6 +333,7 @@ impl TGAImage {
                                               .filter(|(x, y, v)| x >= x0 && x <= x1)
                                               .for_each;
     }
+    */
 
     pub fn clear(&mut self) {
         self.data.fill(0_u8);

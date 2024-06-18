@@ -11,9 +11,15 @@ pub struct Point2<Scalar> {
     pub y: Scalar,
 }
 
-impl<Scalar : Default> Point2<Scalar> {
+impl<Scalar> Point2<Scalar> where Scalar: Default {
     pub fn origin() -> Self {
         Self { x: Scalar::default(), y: Scalar::default() }
+    }
+}
+
+impl<> From<Point2<f32>> for Point2<i32> {
+    fn from(value: Point2<f32>) -> Self {
+        Self { x: value.x as i32, y: value.y as i32 }
     }
 }
 
