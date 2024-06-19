@@ -65,6 +65,19 @@ impl<S> Point3<S> where
     }
 }
 
+impl<S> Sub<Point3<S>> for Point3<S> where
+    S: Sub<Output = S> {
+    type Output = Vec3<S>;
+
+    fn sub(self, rhs: Point3<S>) -> Self::Output {
+        Self::Output {
+            x: rhs.x - self.x,
+            y: rhs.y - self.y,
+            z: rhs.z - self.z
+        }
+    }
+}
+
 impl<Scalar> From<Vec3<Scalar>> for Point3<Scalar> {
     fn from(v: Vec3<Scalar>) -> Self {
         Point3 { x: v.x, y: v.y, z: v.z }

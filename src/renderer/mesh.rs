@@ -1,19 +1,27 @@
-use crate::math::{BndBox2f, Point2f};
+use crate::math::{BndBox2f, Point2f, Point3f, Vec3f};
 use crate::objmodel::ObjModel;
 use crate::tgaimage::{TGAColor, TGAImage};
 use super::{Camera, draw_triangle};
-use rand::Rng;
 
 pub fn draw_mesh(model: &ObjModel,
                  camera: &Camera,
-                 image: &mut TGAImage) {
+                 light_dir: Vec3f,
+                 image: &mut TGAImage,
+                 color: TGAColor) {
     // Compute 2D camera plane coords of triangle vertices
     let mut pnt2s: Vec<Point2f> = Vec::new();
+    let mut intensities: Vec<f32> = Vec::new();
     for tri in model.triangles.as_slice() {
-        for v_idx in tri.vertices {
-            let v = model.vertices[v_idx as usize - 1];
-            pnt2s.push(camera.project_point(&v));
+        let mut vs = [Point3f::origin(); 3];
+        for (i, v_idx) in tri.vertices.iter().enumerate() {
+            vs[i] = model.vertices[*v_idx as usize - 1];
+            pnt2s.push(camera.project_point(&vs[i]));
         }
+
+        // Use reversed normal to avoid having to negate dot
+        // product for intensity value
+        let rev_normal = (vs[2] - vs[0]).cross(vs[1] - vs[0]).normalize();
+        intensities.push(rev_normal.dot(light_dir));
     }
 
     let mut bnd_box = BndBox2f::new_empty();
@@ -32,17 +40,19 @@ pub fn draw_mesh(model: &ObjModel,
     }
 
     // Draw the triangles
-    let mut rng = rand::thread_rng();
-    for i in (0..pnt2s.len()).step_by(3) {
+    for (i, intens) in (0..pnt2s.len()).step_by(3).zip(intensities) {
+        if intens <= 0.0 {
+            continue
+        }
+
         let (p1, p2, p3) = (
             pnt2s[i].into(),
             pnt2s[i + 1].into(),
             pnt2s[i + 2].into());
 
-        let r: u8 = rng.gen();
-        let g: u8 = rng.gen();
-        let b: u8 = rng.gen();
-        let random_color = TGAColor::from_rgb(r, g, b);
-        draw_triangle(p1, p2, p3, image, random_color);
+        println!("Intensity {:?}", intens);
+        let local_color = color.scale(intens);
+        println!("Local color {:?}", local_color);
+        draw_triangle(p1, p2, p3, image, local_color);
     }
 }

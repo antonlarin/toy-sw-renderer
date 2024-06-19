@@ -128,6 +128,15 @@ impl TGAColor {
     pub fn g(&self) -> u8 { self.val[1] }
     pub fn b(&self) -> u8 { self.val[0] }
     pub fn a(&self) -> u8 { self.val[3] }
+
+    pub fn scale(&self, factor: f32) -> Self {
+        let mut res_val = [0u8; 4];
+        for i in 0..4 {
+            res_val[i] = (self.val[i] as f32 * factor) as u8;
+        }
+        println!("Resuting color comps: {:?}", res_val);
+        Self { val: res_val, bytespp: self.bytespp }
+    }
 }
 
 #[derive(Clone, Debug, PartialEq)]
