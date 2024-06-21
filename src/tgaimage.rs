@@ -13,7 +13,7 @@ pub mod tga_format {
 #[derive(Debug)]
 pub enum TGAError {
     EmptyImage,
-    InvalidCoords,
+    InvalidCoords(i32, i32),
     FileOpenError,
     WriteError
 }
@@ -134,7 +134,6 @@ impl TGAColor {
         for i in 0..4 {
             res_val[i] = (self.val[i] as f32 * factor) as u8;
         }
-        println!("Resuting color comps: {:?}", res_val);
         Self { val: res_val, bytespp: self.bytespp }
     }
 }
@@ -301,7 +300,7 @@ impl TGAImage {
         if self.data.is_empty() {
             return Err(TGAError::EmptyImage)
         } else if x < 0 || y < 0 || x >= self.width || y >= self.height {
-            return Err(TGAError::InvalidCoords)
+            return Err(TGAError::InvalidCoords(x, y))
         }
 
         let bpp = self.bytespp as usize;
@@ -315,7 +314,7 @@ impl TGAImage {
         if self.data.is_empty() {
             return Err(TGAError::EmptyImage)
         } else if x < 0 || y < 0 || x >= self.width || y >= self.height {
-            return Err(TGAError::InvalidCoords)
+            return Err(TGAError::InvalidCoords(x, y))
         }
 
         let bpp = self.bytespp as usize;

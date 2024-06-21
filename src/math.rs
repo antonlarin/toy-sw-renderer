@@ -60,8 +60,8 @@ impl<S> Point3<S> where
         Point3 { x: coord[0], y: coord[1], z: coord[2] }
     }
 
-    pub fn to_vec3(&self) -> Vec3<S> {
-        Vec3 { x: self.x as S, y: self.y as S, z: self.z as S }
+    pub fn drop_z(&self) -> Point2<S> {
+        Point2 { x: self.x, y: self.y }
     }
 }
 
@@ -78,8 +78,8 @@ impl<S> Sub<Point3<S>> for Point3<S> where
     }
 }
 
-impl<Scalar> From<Vec3<Scalar>> for Point3<Scalar> {
-    fn from(v: Vec3<Scalar>) -> Self {
+impl<S> From<Vec3<S>> for Point3<S> {
+    fn from(v: Vec3<S>) -> Self {
         Point3 { x: v.x, y: v.y, z: v.z }
     }
 }
@@ -138,8 +138,8 @@ impl Vec3<f32> {
     }
 }
 
-impl From<Point3<f32>> for Vec3<f32> {
-    fn from(p: Point3<f32>) -> Self {
+impl<S> From<Point3<S>> for Vec3<S> {
+    fn from(p: Point3<S>) -> Self {
         Self { x: p.x, y: p.y, z: p.z }
     }
 }
@@ -186,6 +186,7 @@ impl Mul<Vec3<i32>> for i32 {
     }
 }
 
+#[derive(Debug)]
 pub struct BndBox2<Scalar> {
     pub min: Point2<Scalar>,
     pub max: Point2<Scalar>,
@@ -221,9 +222,78 @@ impl<S> BndBox2<S> where
         else if pnt.y > self.max.y { self.max.y = pnt.y; }
     }
 
+    pub fn clamp_by(&mut self, clamp: &Self) {
+        if self.min.x < clamp.min.x {
+            self.min.x = clamp.min.x;
+        }
+        if self.max.x > clamp.max.x {
+            self.max.x = clamp.max.x;
+        }
+        if self.min.y < clamp.min.y {
+            self.min.y = clamp.min.y;
+        }
+        if self.max.y > clamp.max.y {
+            self.max.y = clamp.max.y;
+        }
+    }
+
+    pub fn clamp(&self, pnt: Point2<S>) -> Point2<S> where S: PartialOrd {
+        let mut x = if pnt.x > self.min.x { pnt.x } else { self.min.x };
+        if pnt.x > self.max.x { x = self.max.x };
+        let mut y = if pnt.y > self.min.y { pnt.y } else { self.min.y };
+        if pnt.y > self.max.y { y = self.max.y };
+        Point2 { x, y }
+    }
+
     pub fn center(&self) -> Point2<S> {
         let two = <S as From<_>>::from(2);
         Point2 { x: (self.min.x + self.max.x) / two, y: (self.min.y + self.max.y) / two }
+    }
+}
+
+pub struct BndBox3<Scalar> {
+    pub min: Point3<Scalar>,
+    pub max: Point3<Scalar>,
+    empty: bool,
+}
+
+pub type BndBox3f = BndBox3<f32>;
+pub type BndBox3i = BndBox3<i32>;
+
+impl<S> BndBox3<S> where
+    S: Copy +
+       Default +
+       PartialOrd +
+       Add<Output = S> +
+       Mul<Output = S> +
+       Div<Output = S> +
+       From<u8> {
+    pub fn new_empty() -> Self {
+        Self { min: Point3::origin(), max: Point3::origin(), empty: true }
+    }
+
+    pub fn add_point(&mut self, pnt: Point3<S>) {
+        if self.empty {
+            self.empty = false;
+            self.min = pnt;
+            self.max = pnt;
+        }
+
+        if pnt.x < self.min.x { self.min.x = pnt.x; }
+        else if pnt.x > self.max.x { self.max.x = pnt.x; }
+
+        if pnt.y < self.min.y { self.min.y = pnt.y; }
+        else if pnt.y > self.max.y { self.max.y = pnt.y; }
+
+        if pnt.z < self.min.z { self.min.z = pnt.z; }
+        else if pnt.z > self.max.z { self.max.z = pnt.z; }
+    }
+
+    pub fn center(&self) -> Point3<S> {
+        let three = <S as From<_>>::from(3);
+        Point3 { x: (self.min.x + self.max.x) / three,
+                 y: (self.min.y + self.max.y) / three,
+                 z: (self.min.z + self.max.z) / three }
     }
 }
 
