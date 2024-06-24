@@ -9,7 +9,10 @@ pub fn draw_mesh(model: &ObjModel,
                  image: &mut TGAImage,
                  color: TGAColor) {
     let mut z_buf = vec![f32::MAX; (image.width * image.height) as usize];
-    for tri in model.triangles.as_slice() {
+    let yellow = TGAColor::from_rgb(255, 255, 0);
+    let blue = TGAColor::from_rgb(0, 0, 255);
+    let green = TGAColor::from_rgb(0, 255, 0);
+    for (j, tri) in model.triangles.iter().enumerate() {
         let mut vs = [Point3f::origin(); 3];
         for (i, v_idx) in tri.vertices.iter().enumerate() {
             vs[i] = model.vertices[(*v_idx - 1) as usize];

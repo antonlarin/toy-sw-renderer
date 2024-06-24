@@ -31,6 +31,22 @@ impl<Scalar> Sub for Point2<Scalar> where Scalar: Sub<Output = Scalar> {
     }
 }
 
+impl<S> Add<Vec2<S>> for Point2<S> where S: Add<Output = S> {
+    type Output = Point2<S>;
+
+    fn add(self, rhs: Vec2<S>) -> Self::Output {
+        Self::Output { x: self.x + rhs.x, y: self.y + rhs.y }
+    }
+}
+
+impl<S> Sub<Vec2<S>> for Point2<S> where S: Sub<Output = S> {
+    type Output = Point2<S>;
+
+    fn sub(self, rhs: Vec2<S>) -> Self::Output {
+        Self::Output { x: self.x - rhs.x, y: self.y - rhs.y }
+    }
+}
+
 pub type Point2f = Point2<f32>;
 pub type Point2i = Point2<i32>;
 
@@ -41,6 +57,9 @@ pub struct Vec2<Scalar> {
 
 impl<Scalar> Vec2<Scalar> {
 }
+
+pub type Vec2f = Vec2<f32>;
+pub type Vec2i = Vec2<i32>;
 
 #[derive(Clone, Copy, Debug)]
 pub struct Point3<Scalar> {

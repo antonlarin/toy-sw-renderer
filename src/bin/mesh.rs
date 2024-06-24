@@ -7,22 +7,27 @@ use swrender::tgaimage::{tga_format, TGAColor, TGAImage};
 
 #[allow(unused_variables)]
 fn main() {
-    const IMAGE_SIZE: i32 = 512;
+    const IMAGE_SIZE: i32 = 1024;
     let mut image = TGAImage::with_size(IMAGE_SIZE, IMAGE_SIZE, tga_format::RGB);
     let model = ObjModel::from_file("assets/african_head.obj").unwrap();
     let color = TGAColor::from_rgb(93, 76, 69);
-    let light_dir = Vec3f { x: -1.0, y: 0.0, z: -1.0 }.normalize();
+    let light_dir = Vec3f { x: -3.0, y: -1.0, z: -3.0 }.normalize();
 
+    // TODO: image size is currently physical,
+    // so zoom must change when image size is changed
+    // Need zoom to fix a specific screen plane, then
+    // the image on that plane can be rendered at various resolutions
     let camera_xp_yp_zp = Camera::new(
-        Point3f { x: 1.0, y: 0.3, z: 1.0 },
+        Point3f { x: 1.0, y: 0.2, z: 1.0 },
         Vec3f { x: -1.0, y: -0.3, z: -1.0 },
         Vec3f { x: 0.0, y: 1.0, z: 0.0 },
-        210.0
+        400.0
     );
 
     draw_mesh(&model, &camera_xp_yp_zp, light_dir, &mut image, color);
+    image.set(122, 163, TGAColor::from_rgb(0, 255, 0)).unwrap();
 
     image.flip_vertically().unwrap();
-    image.write_to_file("assets/mesh_head.tga").unwrap();
+    image.write_to_file("assets/mesh_head2.tga").unwrap();
 }
 

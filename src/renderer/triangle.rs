@@ -1,4 +1,4 @@
-use crate::math::{BndBox2i, BndBox2f, Point2f, Point2i, Point3f, Vec3f, Vec3i};
+use crate::math::{BndBox2i, BndBox2f, Point2f, Point2i, Point3f, Vec2f, Vec3f, Vec3i};
 use crate::renderer::Camera;
 use crate::tgaimage::{TGAColor, TGAImage};
 
@@ -97,20 +97,14 @@ fn barycentric(v1: &Point2f, v2: &Point2f, v3: &Point2f, p: &Point2f) -> Option<
     let aux1 = Vec3f { x: v2.x - v1.x, y: v3.x - v1.x, z: v1.x - p.x };
     let aux2 = Vec3f { x: v2.y - v1.y, y: v3.y - v1.y, z: v1.y - p.y };
     let solution = aux1.cross(aux2);
-    if solution.z.abs() < 1.0 {
+    if solution.z.abs() < 1e-2 {
         return None
     }
-
-    let barycentric = Vec3f {
-        x: 1.0f32 - (solution.x + solution.y) as f32 / solution.z as f32,
-        y: solution.x as f32 / solution.z as f32,
-        z: solution.y as f32 / solution.z as f32,
-    };
-    if barycentric.x < 0.0 || barycentric.y < 0.0 || barycentric.z < 0.0 {
-        return None
-    } else {
-        return Some(barycentric.into())
-    }
+    Some(Point3f {
+        x: 1.0 - (solution.x + solution.y) / solution.z,
+        y: solution.x / solution.z,
+        z: solution.y / solution.z,
+    })
 }
 
 pub fn draw_3d_triangle(v1: Point3f,
@@ -121,9 +115,15 @@ pub fn draw_3d_triangle(v1: Point3f,
                         image: &mut TGAImage,
                         color: TGAColor,
                         z_buf: &mut [f32]) {
+    let iw = (image.width - 1) as f32;
+    let ih = (image.height - 1) as f32;
+
     let local_v1 = camera.transform(&v1);
     let local_v2 = camera.transform(&v2);
     let local_v3 = camera.transform(&v3);
+    println!("v1: {:?}", local_v1);
+    println!("v2: {:?}", local_v2);
+    println!("v3: {:?}", local_v3);
 
     // back face culling
     let rev_normal = (v3 - v1).cross(v2 - v1).normalize();
@@ -133,23 +133,34 @@ pub fn draw_3d_triangle(v1: Point3f,
     }
     let shade = color.scale(intensity);
 
-    let flat_v1 = local_v1.drop_z();
-    let flat_v2 = local_v2.drop_z();
-    let flat_v3 = local_v3.drop_z();
+    let mut flat_v1 = local_v1.drop_z();
+    flat_v1.x = (flat_v1.x + 0.5 * iw).trunc();
+    flat_v1.y = (flat_v1.y + 0.5 * ih).trunc();
+    let mut flat_v2 = local_v2.drop_z();
+    flat_v2.x = (flat_v2.x + 0.5 * iw).trunc();
+    flat_v2.y = (flat_v2.y + 0.5 * ih).trunc();
+    let mut flat_v3 = local_v3.drop_z();
+    flat_v3.x = (flat_v3.x + 0.5 * iw).trunc();
+    flat_v3.y = (flat_v3.y + 0.5 * ih).trunc();
 
     let mut clamp = BndBox2f::new_empty();
-    let iw = (image.width - 1) as f32;
-    let ih = (image.height - 1) as f32;
-    clamp.add_point(Point2f { x: -iw * 0.5, y: -ih * 0.5 });
-    clamp.add_point(Point2f { x: iw * 0.5, y: ih * 0.5 });
+    clamp.add_point(Point2f { x: 0.0, y: 0.0 });
+    clamp.add_point(Point2f { x: iw, y: ih });
     let mut bbox = BndBox2f::new_empty();
     bbox.add_point(flat_v1);
     bbox.add_point(flat_v2);
     bbox.add_point(flat_v3);
     bbox.clamp_by(&clamp);
+    println!("bbox: {:?}", bbox);
     let num_steps_x = (bbox.max.x - bbox.min.x) as i32;
     let num_steps_y = (bbox.max.y - bbox.min.y) as i32;
-
+    println!("num_steps ({}, {})", num_steps_x, num_steps_y);
+    println!("xrange in image {} - {}",
+           iw * 0.5 + bbox.min.x,
+           iw * 0.5 + (bbox.min.x + num_steps_x as f32));
+    println!("int xrange in image {} - {}",
+           (iw * 0.5 + bbox.min.x) as i32,
+           (iw * 0.5 + (bbox.min.x + num_steps_x as f32)) as i32);
     for x_off in 0..=num_steps_x {
         for y_off in 0..=num_steps_y {
             let pnt = Point2f {
@@ -157,20 +168,35 @@ pub fn draw_3d_triangle(v1: Point3f,
                 y: bbox.min.y + y_off as f32,
             };
             if let Some(bary) = barycentric(&flat_v1, &flat_v2, &flat_v3, &pnt) {
-                let x = (iw * 0.5 + pnt.x).round() as i32;
-                let y = (ih * 0.5 + pnt.y).round() as i32;
+                let x = pnt.x as i32;
+                let y = pnt.y as i32;
+                if x == 107 && y == 202 {
+                    println!("bary: {:?}", bary);
+                }
                 let z = local_v1.z * bary.x +
                         local_v2.z * bary.y +
                         local_v3.z * bary.z;
-                println!("z_buf @ (x y) = {} {} is {}", x, y, z_buf[(x + image.width * y) as usize]);
+                if bary.x < 0.0 || bary.y < 0.0 || bary.z < 0.0 {
+                    if x == 107 && y == 202 {
+                        println!("skipping");
+                    }
+                    continue;
+                }
                 if z_buf[(x + image.width * y) as usize] > z {
-                    println!("update z_buf");
+                    if x == 107 && y == 202 {
+                        println!("drawing with {:?}", shade);
+                    }
                     z_buf[(x + image.width * y) as usize] = z;
                     image.set(x, y, shade).unwrap();
+                } else {
+                    if x == 107 && y == 202 {
+                        println!("skipping due to zbuf");
+                    }
                 }
             }
         }
     }
+    println!();
 }
 
 #[cfg(test)]
