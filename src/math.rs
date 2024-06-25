@@ -2,18 +2,15 @@ use std::ops::{Add, Div, Mul, Sub};
 
 const EPSILON: f32 = 1e-7;
 
-// TODO: consider carefully which operations make sense for integer-component
-// points and vecs
-
 #[derive(Clone, Copy, Debug)]
-pub struct Point2<Scalar> {
-    pub x: Scalar,
-    pub y: Scalar,
+pub struct Point2<S> {
+    pub x: S,
+    pub y: S,
 }
 
-impl<Scalar> Point2<Scalar> where Scalar: Default {
+impl<S> Point2<S> where S: Default {
     pub fn origin() -> Self {
-        Self { x: Scalar::default(), y: Scalar::default() }
+        Self { x: S::default(), y: S::default() }
     }
 }
 
@@ -23,8 +20,8 @@ impl<> From<Point2<f32>> for Point2<i32> {
     }
 }
 
-impl<Scalar> Sub for Point2<Scalar> where Scalar: Sub<Output = Scalar> {
-    type Output = Vec2<Scalar>;
+impl<S> Sub for Point2<S> where S: Sub<Output = S> {
+    type Output = Vec2<S>;
 
     fn sub(self, rhs: Self) -> Self::Output {
         Self::Output { x: self.x - rhs.x, y: self.y - rhs.y }
@@ -50,22 +47,19 @@ impl<S> Sub<Vec2<S>> for Point2<S> where S: Sub<Output = S> {
 pub type Point2f = Point2<f32>;
 pub type Point2i = Point2<i32>;
 
-pub struct Vec2<Scalar> {
-    pub x: Scalar,
-    pub y: Scalar,
-}
-
-impl<Scalar> Vec2<Scalar> {
+pub struct Vec2<S> {
+    pub x: S,
+    pub y: S,
 }
 
 pub type Vec2f = Vec2<f32>;
 pub type Vec2i = Vec2<i32>;
 
 #[derive(Clone, Copy, Debug)]
-pub struct Point3<Scalar> {
-    pub x: Scalar,
-    pub y: Scalar,
-    pub z: Scalar,
+pub struct Point3<S> {
+    pub x: S,
+    pub y: S,
+    pub z: S,
 }
 
 impl<S> Point3<S> where
@@ -107,21 +101,21 @@ pub type Point3f = Point3<f32>;
 pub type Point3i = Point3<i32>;
 
 #[derive(Clone, Copy, Debug)]
-pub struct Vec3<Scalar> {
-    pub x: Scalar,
-    pub y: Scalar,
-    pub z: Scalar,
+pub struct Vec3<S> {
+    pub x: S,
+    pub y: S,
+    pub z: S,
 }
 
 pub type Vec3f = Vec3<f32>;
 pub type Vec3i = Vec3<i32>;
 
-impl<Scalar> Vec3<Scalar> where
-    Scalar: Mul<Output = Scalar> +
-            Add<Output = Scalar> +
-            Sub<Output = Scalar> +
-            Copy {
-    pub fn dot(&self, other: Self) -> Scalar {
+impl<S> Vec3<S> where
+    S: Mul<Output = S> +
+       Add<Output = S> +
+       Sub<Output = S> +
+       Copy {
+    pub fn dot(&self, other: Self) -> S {
         self.x * other.x + self.y * other.y + self.z * other.z
     }
 
@@ -163,7 +157,7 @@ impl<S> From<Point3<S>> for Vec3<S> {
     }
 }
 
-impl<Scalar> Add for Vec3<Scalar> where Scalar: Add<Output = Scalar> {
+impl<S> Add for Vec3<S> where S: Add<Output = S> {
     type Output = Self;
 
     fn add(self, rhs: Self) -> Self::Output {
@@ -171,7 +165,7 @@ impl<Scalar> Add for Vec3<Scalar> where Scalar: Add<Output = Scalar> {
     }
 }
 
-impl<Scalar> Sub for Vec3<Scalar> where Scalar: Sub<Output = Scalar> {
+impl<S> Sub for Vec3<S> where S: Sub<Output = S> {
     type Output = Self;
 
     fn sub(self, rhs: Self) -> Self::Output {
@@ -179,12 +173,12 @@ impl<Scalar> Sub for Vec3<Scalar> where Scalar: Sub<Output = Scalar> {
     }
 }
 
-impl<Scalar> Mul<Scalar> for Vec3<Scalar> where
-    Scalar: Mul<Output = Scalar> +
+impl<S> Mul<S> for Vec3<S> where
+    S: Mul<Output = S> +
             Copy {
     type Output = Self;
 
-    fn mul(self, rhs: Scalar) -> Self::Output {
+    fn mul(self, rhs: S) -> Self::Output {
         Self::Output { x: self.x * rhs, y: self.y * rhs, z: self.z * rhs }
     }
 }
@@ -206,9 +200,9 @@ impl Mul<Vec3<i32>> for i32 {
 }
 
 #[derive(Debug)]
-pub struct BndBox2<Scalar> {
-    pub min: Point2<Scalar>,
-    pub max: Point2<Scalar>,
+pub struct BndBox2<S> {
+    pub min: Point2<S>,
+    pub max: Point2<S>,
     empty: bool,
 }
 
@@ -270,9 +264,9 @@ impl<S> BndBox2<S> where
     }
 }
 
-pub struct BndBox3<Scalar> {
-    pub min: Point3<Scalar>,
-    pub max: Point3<Scalar>,
+pub struct BndBox3<S> {
+    pub min: Point3<S>,
+    pub max: Point3<S>,
     empty: bool,
 }
 

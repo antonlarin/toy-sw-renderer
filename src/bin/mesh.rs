@@ -28,6 +28,6 @@ fn main() {
     image.set(122, 163, TGAColor::from_rgb(0, 255, 0)).unwrap();
 
     image.flip_vertically().unwrap();
-    image.write_to_file("assets/mesh_head2.tga").unwrap();
+    image.write_to_file("assets/mesh_head.tga").unwrap();
 }
 
