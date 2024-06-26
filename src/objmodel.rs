@@ -1,6 +1,6 @@
 use std::fs::File;
 use std::io::{BufReader, BufRead};
-use crate::math::Point3f;
+use crate::math::{Point2f, Point3f, Vec3f};
 
 #[derive(Debug)]
 pub struct Triangle {
@@ -11,9 +11,29 @@ pub struct Triangle {
 pub struct ObjModel {
     pub vertices: Vec<Point3f>,
     pub triangles: Vec<Triangle>,
+    pub texcoords: Option<Vec<Point2f>>,
+    pub normals: Option<Vec<Vec3f>>,
 }
 
 impl ObjModel {
+    fn read_coords<const Dim: usize>(split: std::str::Split<char>) -> Option<[f32; Dim]> {
+        let mut i = 0;
+        let mut coord = [0.0f32; Dim];
+        for line_elem in split {
+            match line_elem.parse::<f32>() {
+                Ok(value) if i < Dim => { coord[i] = value; },
+                _ => { break; }
+            }
+            i += 1;
+        }
+
+        if i == Dim {
+            Some(coord)
+        } else {
+            None
+        }
+    }
+
     pub fn from_file(filename: &str) -> Option<Self> {
         let file = File::open(filename);
         if let Err(_) = file {
@@ -23,6 +43,8 @@ impl ObjModel {
         let mut res = ObjModel {
             vertices: vec![],
             triangles: vec![],
+            texcoords: None,
+            normals: None,
         };
         let buffered_file = BufReader::new(file.unwrap());
         for l in buffered_file.lines() {
@@ -34,27 +56,9 @@ impl ObjModel {
             let mut split = line.split(' ');
             match split.next() {
                 Some("v") => {
-                    // parse the rest as vertex
-                    let mut i = 0;
-                    let mut coord = [0.0f32; 3];
-                    for line_elem in split {
-                        match line_elem.parse::<f32>() {
-                            Ok(value) if i < 3 => {
-                                coord[i] = value;
-                                i += 1;
-                            },
-                            _ => {
-                                // parsing error or too many coords for vertex
-                                continue;
-                            }
-                        }
-
-                        if i < 3 {
-                            // not enough coords for vertex
-                            continue;
-                        } else {
-                            res.vertices.push(Point3f::from_slice(&coord));
-                        }
+                    if let Some(coords) = Self::read_coords::<3>(split) {
+                        let pnt = Point3f::from(&coords[..]);
+                        res.vertices.push(pnt);
                     }
                 },
                 Some("f") => {
@@ -83,12 +87,24 @@ impl ObjModel {
                     }
                 },
                 Some("vt") => {
-                    // TODO
-                    // parse the rest as texture coord
+                    if let Some(coords) = Self::read_coords::<2>(split) {
+                        let pnt = Point2f::from_slice(&coords);
+                        if let Some(texcoords) = res.texcoords.as_mut() {
+                            texcoords.push(pnt);
+                        } else {
+                            res.texcoords = Some(vec![pnt]);
+                        }
+                    }
                 },
                 Some("vn") => {
-                    // TODO
-                    // parse the rest as vertex normal
+                    if let Some(coords) = Self::read_coords::<3>(split) {
+                        let normal = Vec3f::from(&coords[..]);
+                        if let Some(normals) = res.normals.as_mut() {
+                            normals.push(normal);
+                        } else {
+                            res.normals = Some(vec![normal]);
+                        }
+                    }
                 },
                 Some(_) => { continue },
                 None => { continue }

@@ -12,6 +12,11 @@ impl<S> Point2<S> where S: Default {
     pub fn origin() -> Self {
         Self { x: S::default(), y: S::default() }
     }
+
+    pub fn from_slice(coord: &[S]) -> Self {
+        assert!(coord.len() == 2);
+        Self { x: coord[0], y: coord[1] }
+    }
 }
 
 impl<> From<Point2<f32>> for Point2<i32> {
@@ -65,12 +70,7 @@ pub struct Point3<S> {
 impl<S> Point3<S> where
     S: Default + Copy {
     pub fn origin() -> Self {
-        Point3 { x: S::default(), y: S::default(), z: S::default() }
-    }
-
-    pub fn from_slice(coord: &[S]) -> Self {
-        assert!(coord.len() == 3);
-        Point3 { x: coord[0], y: coord[1], z: coord[2] }
+        Self { x: S::default(), y: S::default(), z: S::default() }
     }
 
     pub fn drop_z(&self) -> Point2<S> {
@@ -97,6 +97,13 @@ impl<S> From<Vec3<S>> for Point3<S> {
     }
 }
 
+impl<S> From<&[S]> for Point3<S> where S: Copy {
+    fn from(coord: &[S]) -> Self {
+        assert!(coord.len() == 3);
+        Self { x: coord[0], y: coord[1], z: coord[2] }
+    }
+}
+
 pub type Point3f = Point3<f32>;
 pub type Point3i = Point3<i32>;
 
@@ -115,6 +122,7 @@ impl<S> Vec3<S> where
        Add<Output = S> +
        Sub<Output = S> +
        Copy {
+
     pub fn dot(&self, other: Self) -> S {
         self.x * other.x + self.y * other.y + self.z * other.z
     }
@@ -154,6 +162,13 @@ impl Vec3<f32> {
 impl<S> From<Point3<S>> for Vec3<S> {
     fn from(p: Point3<S>) -> Self {
         Self { x: p.x, y: p.y, z: p.z }
+    }
+}
+
+impl<S> From<&[S]> for Vec3<S> where S: Copy {
+    fn from(value: &[S]) -> Self {
+        assert!(value.len() == 3);
+        Self { x: value[0], y: value[1], z: value[2] }
     }
 }
 
