@@ -8,7 +8,9 @@ pub struct Point2<S> {
     pub y: S,
 }
 
-impl<S> Point2<S> where S: Default {
+impl<S> Point2<S> where
+    S: Default + Copy {
+
     pub fn origin() -> Self {
         Self { x: S::default(), y: S::default() }
     }

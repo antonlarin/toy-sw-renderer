@@ -4,7 +4,9 @@ use crate::math::{Point2f, Point3f, Vec3f};
 
 #[derive(Debug)]
 pub struct Triangle {
-    pub vertices: [u32; 3]
+    pub vertices: [u32; 3],
+    pub texcoords: Option<[u32; 3]>,
+    pub normals: Option<[u32; 3]>,
 }
 
 #[derive(Debug)]
@@ -16,18 +18,18 @@ pub struct ObjModel {
 }
 
 impl ObjModel {
-    fn read_coords<const Dim: usize>(split: std::str::Split<char>) -> Option<[f32; Dim]> {
+    fn read_coords<const DIM: usize>(split: std::str::Split<char>) -> Option<[f32; DIM]> {
         let mut i = 0;
-        let mut coord = [0.0f32; Dim];
+        let mut coord = [0.0f32; DIM];
         for line_elem in split {
             match line_elem.parse::<f32>() {
-                Ok(value) if i < Dim => { coord[i] = value; },
+                Ok(value) if i < DIM => { coord[i] = value; },
                 _ => { break; }
             }
             i += 1;
         }
 
-        if i == Dim {
+        if i == DIM {
             Some(coord)
         } else {
             None
@@ -64,26 +66,41 @@ impl ObjModel {
                 Some("f") => {
                     // parse the rest as face
                     let mut i = 0;
-                    let mut vertices = [0u32; 3];
+                    let mut indices = [0u32; 9];
                     for line_elem in split {
-                        if let Some(idx_str) = line_elem.split('/').next() {
-                            match idx_str.parse::<u32>() {
-                                Ok(idx) if i < 3 => {
-                                    vertices[i] = idx;
-                                    i += 1;
+                        for (j, s) in line_elem.split('/').enumerate() {
+                            match s.parse::<u32>() {
+                                Ok(idx) if i < 3 && j < 3 => {
+                                    indices[i * 3 + j] = idx;
                                 },
                                 _ => {
-                                    continue;
+                                    continue
                                 }
                             }
                         }
+                        i += 1;
                     }
 
                     if i < 3 {
                         // not enough vertex indexes for triangle
                         continue;
                     } else {
-                        res.triangles.push(Triangle { vertices });
+                        let vert_indices: &[u32; 3] = indices[..3].try_into().unwrap();
+                        let texcoord_indices: &[u32; 3] = indices[3..6].try_into().unwrap();
+                        let vnormal_indices: &[u32; 3] = indices[6..].try_into().unwrap();
+                        res.triangles.push(Triangle {
+                            vertices: *vert_indices,
+                            texcoords: if texcoord_indices[0] == 0 {
+                                None
+                            } else {
+                                Some(*texcoord_indices)
+                            },
+                            normals: if vnormal_indices[0] == 0 {
+                                None
+                            } else {
+                                Some(*vnormal_indices)
+                            },
+                        });
                     }
                 },
                 Some("vt") => {
@@ -128,6 +145,34 @@ mod tests {
         let model = model.unwrap();
         assert_eq!(model.vertices.len(), 8);
         assert_eq!(model.triangles.len(), 12);
+    }
+
+    #[test]
+    fn import_cube_with_texcoords() {
+        let model = ObjModel::from_file("assets/cube_1.obj");
+        assert!(model.is_some());
+
+        let model = model.unwrap();
+        assert!(model.texcoords.is_some());
+        assert_eq!(model.texcoords.unwrap().len(), 4);
+        assert!(model.triangles[0].texcoords.is_some());
+
+        assert!(model.normals.is_none());
+        assert!(model.triangles[0].normals.is_none());
+    }
+
+    #[test]
+    fn import_cube_with_normals() {
+        let model = ObjModel::from_file("assets/cube_2.obj");
+        assert!(model.is_some());
+
+        let model = model.unwrap();
+        assert!(model.normals.is_some());
+        assert_eq!(model.normals.unwrap().len(), 8);
+        assert!(model.triangles[0].normals.is_some());
+
+        assert!(model.texcoords.is_none());
+        assert!(model.triangles[0].texcoords.is_none());
     }
 
     #[test]
