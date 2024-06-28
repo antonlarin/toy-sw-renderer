@@ -65,23 +65,23 @@ impl ObjModel {
                 },
                 Some("f") => {
                     // parse the rest as face
-                    let mut i = 0;
+                    let mut slot_idx = 0;
                     let mut indices = [0u32; 9];
                     for line_elem in split {
-                        for (j, s) in line_elem.split('/').enumerate() {
+                        for (idx_type, s) in line_elem.split('/').enumerate() {
                             match s.parse::<u32>() {
-                                Ok(idx) if i < 3 && j < 3 => {
-                                    indices[i * 3 + j] = idx;
+                                Ok(idx) if slot_idx < 3 && idx_type < 3 => {
+                                    indices[idx_type * 3 + slot_idx] = idx;
                                 },
                                 _ => {
                                     continue
                                 }
                             }
                         }
-                        i += 1;
+                        slot_idx += 1;
                     }
 
-                    if i < 3 {
+                    if slot_idx < 3 {
                         // not enough vertex indexes for triangle
                         continue;
                     } else {
