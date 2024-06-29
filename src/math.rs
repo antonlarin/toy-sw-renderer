@@ -51,12 +51,58 @@ impl<S> Sub<Vec2<S>> for Point2<S> where S: Sub<Output = S> {
     }
 }
 
+impl<S> Mul<S> for Point2<S> where S: Mul<Output = S> + Copy {
+    type Output = Point2<S>;
+
+    fn mul(self, rhs: S) -> Self::Output {
+        Self::Output { x: self.x * rhs, y: self.y * rhs }
+    }
+}
+
+impl<> Mul<Point2<f32>> for f32 {
+    type Output = Point2<f32>;
+
+    fn mul(self, rhs: Point2<f32>) -> Self::Output {
+        Self::Output { x: self * rhs.x, y: self * rhs.y }
+    }
+}
+
 pub type Point2f = Point2<f32>;
 pub type Point2i = Point2<i32>;
 
 pub struct Vec2<S> {
     pub x: S,
     pub y: S,
+}
+
+impl<S> Add for Vec2<S> where S: Add<Output = S> {
+    type Output = Self;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        Self::Output { x: self.x + rhs.x, y: self.y + rhs.y }
+    }
+}
+
+impl<S> Mul<S> for Vec2<S> where S: Mul<Output = S> + Copy {
+    type Output = Vec2<S>;
+
+    fn mul(self, rhs: S) -> Self::Output {
+        Self::Output { x: self.x * rhs, y: self.y * rhs }
+    }
+}
+
+impl<> Mul<Vec2<f32>> for f32 {
+    type Output = Vec2<f32>;
+
+    fn mul(self, rhs: Vec2<f32>) -> Self::Output {
+        Self::Output { x: self * rhs.x, y: self * rhs.y }
+    }
+}
+
+impl<S> From<Point2<S>> for Vec2<S> {
+    fn from(value: Point2<S>) -> Self {
+        Self { x: value.x, y: value.y }
+    }
 }
 
 pub type Vec2f = Vec2<f32>;
@@ -80,8 +126,7 @@ impl<S> Point3<S> where
     }
 }
 
-impl<S> Sub<Point3<S>> for Point3<S> where
-    S: Sub<Output = S> {
+impl<S> Sub for Point3<S> where S: Sub<Output = S> {
     type Output = Vec3<S>;
 
     fn sub(self, rhs: Point3<S>) -> Self::Output {

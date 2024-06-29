@@ -1,4 +1,4 @@
-use crate::math::{BndBox2i, BndBox2f, Point2f, Point2i, Point3f, Vec3f, Vec3i};
+use crate::math::{BndBox2i, BndBox2f, Point2f, Point2i, Point3f, Vec2f, Vec3f, Vec3i};
 use crate::renderer::Camera;
 use crate::tgaimage::{TGAColor, TGAImage};
 
@@ -107,14 +107,14 @@ fn barycentric(v1: &Point2f, v2: &Point2f, v3: &Point2f, p: &Point2f) -> Option<
     })
 }
 
-pub fn draw_3d_triangle(v1: Point3f,
-                        v2: Point3f,
-                        v3: Point3f,
-                        camera: &Camera,
-                        light_dir: Vec3f,
-                        image: &mut TGAImage,
-                        color: TGAColor,
-                        z_buf: &mut [f32]) {
+fn draw_3d_triangle_impl<C>(v1: Point3f,
+                            v2: Point3f,
+                            v3: Point3f,
+                            camera: &Camera,
+                            light_dir: Vec3f,
+                            image: &mut TGAImage,
+                            get_color: C,
+                            z_buf: &mut [f32]) where C: Fn(f32, f32, f32) -> TGAColor {
     let iw = (image.width - 1) as f32;
     let ih = (image.height - 1) as f32;
 
@@ -128,9 +128,7 @@ pub fn draw_3d_triangle(v1: Point3f,
     if intensity <= 0.0 {
         return
     }
-    let shade = color.scale(intensity);
 
-    //
     let mut flat_v1 = local_v1.drop_z();
     flat_v1.x = (flat_v1.x + 0.5 * iw + 0.5).trunc();
     flat_v1.y = (flat_v1.y + 0.5 * ih + 0.5).trunc();
@@ -164,6 +162,7 @@ pub fn draw_3d_triangle(v1: Point3f,
                 let z = local_v1.z * bary.x +
                         local_v2.z * bary.y +
                         local_v3.z * bary.z;
+                let shade = get_color(bary.x, bary.y, bary.z).scale(intensity);
                 if bary.x < 0.0 || bary.y < 0.0 || bary.z < 0.0 { continue; }
                 if z_buf[(x + image.width * y) as usize] > z {
                     z_buf[(x + image.width * y) as usize] = z;
@@ -172,6 +171,41 @@ pub fn draw_3d_triangle(v1: Point3f,
             }
         }
     }
+}
+
+pub fn draw_3d_triangle(v1: Point3f,
+                        v2: Point3f,
+                        v3: Point3f,
+                        camera: &Camera,
+                        light_dir: Vec3f,
+                        image: &mut TGAImage,
+                        color: TGAColor,
+                        z_buf: &mut [f32]) {
+    let const_color = |_, _, _| {
+        color
+    };
+    draw_3d_triangle_impl(v1, v2, v3, camera, light_dir, image, const_color, z_buf);
+}
+
+pub fn draw_3d_triangle_textured(v1: Point3f,
+                                 v2: Point3f,
+                                 v3: Point3f,
+                                 tc1: Point2f,
+                                 tc2: Point2f,
+                                 tc3: Point2f,
+                                 camera: &Camera,
+                                 light_dir: Vec3f,
+                                 image: &mut TGAImage,
+                                 diff_texture: &TGAImage,
+                                 z_buf: &mut [f32]) {
+    let diff_texture_picker = |l1, l2, l3| {
+        let texpnt: Vec2f = l1 * <Point2f as Into<Vec2f>>::into(tc1) +
+                            l2 * <Point2f as Into<Vec2f>>::into(tc2) +
+                            l3 * <Point2f as Into<Vec2f>>::into(tc3);
+        diff_texture.get(texpnt.x as i32, texpnt.y as i32).unwrap()
+    };
+
+    draw_3d_triangle_impl(v1, v2, v3, camera, light_dir, image, diff_texture_picker, z_buf);
 }
 
 #[cfg(test)]
