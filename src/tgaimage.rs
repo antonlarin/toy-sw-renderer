@@ -1,8 +1,7 @@
 use core::result::Result;
 use std::convert::From;
 use std::fs::File;
-use std::io::{BufWriter, Write};
-use rayon::prelude::*;
+use std::io::{BufReader, BufWriter, Read, Write};
 
 pub mod tga_format {
     pub const GRAYSCALE: i32 = 1;
@@ -78,6 +77,23 @@ impl TGAHeader {
         sink.write_all(&res)?;
         Ok(())
     }
+
+    fn read<R: Read>(source: &mut R) -> TGAResult<TGAHeader> {
+        Ok(TGAHeader {
+            id_length: 0,
+            color_map_type: 0,
+            data_type_code: 10,
+            color_map_origin: 0,
+            color_map_length: 0,
+            color_map_depth: 0,
+            x_origin: 0,
+            y_origin: 0,
+            width: 0i16,
+            height: 0i16,
+            bits_per_pixel: 24i8,
+            image_descriptor: 0x20,
+        })
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -146,9 +162,9 @@ pub struct TGAImage {
     bytespp: i32
 }
 
-// fn load_rle_data() {
+fn load_rle_data<R: Read>(src: &mut R, img: &mut TGAImage) ->TGAResult<()> {
 
-// }
+}
 
 fn unload_rle_data<W: Write>(img: &TGAImage, dst: &mut W) -> TGAResult<()> {
     const MAX_CHUNK: usize = 128;
@@ -216,6 +232,8 @@ fn unload_rle_data<W: Write>(img: &TGAImage, dst: &mut W) -> TGAResult<()> {
 }
 
 impl TGAImage {
+    const FOOTER: &str = "\0\0\0\0\0\0\0\0TRUEVISION-XFILE.\0";
+
     pub fn new() -> Self {
         TGAImage {
             data: Vec::new(),
@@ -236,19 +254,28 @@ impl TGAImage {
         }
     }
 
-    // fn from_tga_file(filename: &str) -> Option<Self> {
-
-    // }
+    pub fn from_tga_file(filename: &str) -> TGAResult<Self> {
+        if let Ok(file) = File::open(filename) {
+            let mut buffered_file = BufReader::new(file);
+            let header = TGAHeader::read(&mut buffered_file)?;
+            let image = Self::with_size(header.width.into(),
+                                        header.height.into(),
+                                        header.bits_per_pixel as i32 / 8);
+            load_rle_data(&mut buffered_file, &mut image);
+            // TODO: check that footer is present
+            Ok(image)
+        } else {
+            return Err(TGAError::FileOpenError)
+        }
+    }
 
     pub fn write_to_file(&self, filename: &str) -> TGAResult<()> {
-        const FOOTER: &str = "\0\0\0\0\0\0\0\0TRUEVISION-XFILE.\0";
-
         if let Ok(file) = File::create(filename) {
             let mut buffered_file = BufWriter::new(file);
             let header = TGAHeader::from_image(self);
             header.write(&mut buffered_file)?;
             unload_rle_data(self, &mut buffered_file)?;
-            buffered_file.write_all(FOOTER.as_bytes())?;
+            buffered_file.write_all(Self::FOOTER.as_bytes())?;
         } else {
             return Err(TGAError::FileOpenError)
         }
