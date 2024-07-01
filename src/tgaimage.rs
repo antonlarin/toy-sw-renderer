@@ -26,6 +26,7 @@ impl From<std::io::Error> for TGAError {
 }
 
 #[repr(align(1))]
+#[derive(Debug)]
 struct TGAHeader {
     id_length: i8,
     color_map_type: i8,
@@ -42,6 +43,8 @@ struct TGAHeader {
 }
 
 impl TGAHeader {
+    const HEADER_LEN: usize = 18;
+
     fn from_image(img: &TGAImage) -> TGAHeader {
         TGAHeader {
             id_length: 0,
@@ -56,6 +59,27 @@ impl TGAHeader {
             height: img.height as i16,
             bits_per_pixel: (img.bytespp * 8) as i8,
             image_descriptor: 0x20,
+        }
+    }
+
+    fn from_bytes(buf: &[u8]) -> TGAHeader {
+        assert!(buf.len() == Self::HEADER_LEN);
+        let slice_to_i16 = |rng: std::ops::Range<usize>| {
+            i16::from_le_bytes(buf[rng].try_into().unwrap())
+        };
+        TGAHeader {
+            id_length: buf[0] as i8,
+            color_map_type: buf[1] as i8,
+            data_type_code: buf[2] as i8,
+            color_map_origin: slice_to_i16(3..5),
+            color_map_length: slice_to_i16(5..7),
+            color_map_depth: buf[7] as i8,
+            x_origin: slice_to_i16(8..10),
+            y_origin: slice_to_i16(10..12),
+            width: slice_to_i16(12..14),
+            height: slice_to_i16(14..16),
+            bits_per_pixel: buf[16] as i8,
+            image_descriptor: buf[17] as i8,
         }
     }
 
@@ -79,20 +103,10 @@ impl TGAHeader {
     }
 
     fn read<R: Read>(source: &mut R) -> TGAResult<TGAHeader> {
-        Ok(TGAHeader {
-            id_length: 0,
-            color_map_type: 0,
-            data_type_code: 10,
-            color_map_origin: 0,
-            color_map_length: 0,
-            color_map_depth: 0,
-            x_origin: 0,
-            y_origin: 0,
-            width: 0i16,
-            height: 0i16,
-            bits_per_pixel: 24i8,
-            image_descriptor: 0x20,
-        })
+        let mut buf = [0u8; Self::HEADER_LEN];
+        source.read_exact(&mut buf)?;
+        let header = TGAHeader::from_bytes(&buf);
+        Ok(header)
     }
 }
 
@@ -163,7 +177,7 @@ pub struct TGAImage {
 }
 
 fn load_rle_data<R: Read>(src: &mut R, img: &mut TGAImage) ->TGAResult<()> {
-
+    Ok(())
 }
 
 fn unload_rle_data<W: Write>(img: &TGAImage, dst: &mut W) -> TGAResult<()> {
@@ -258,10 +272,11 @@ impl TGAImage {
         if let Ok(file) = File::open(filename) {
             let mut buffered_file = BufReader::new(file);
             let header = TGAHeader::read(&mut buffered_file)?;
-            let image = Self::with_size(header.width.into(),
-                                        header.height.into(),
-                                        header.bits_per_pixel as i32 / 8);
-            load_rle_data(&mut buffered_file, &mut image);
+            println!("Read in TGAHeader {:?}", header);
+            let mut image = Self::with_size(header.width.into(),
+                                            header.height.into(),
+                                            header.bits_per_pixel as i32 / 8);
+            load_rle_data(&mut buffered_file, &mut image)?;
             // TODO: check that footer is present
             Ok(image)
         } else {
