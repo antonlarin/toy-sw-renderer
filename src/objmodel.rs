@@ -24,7 +24,7 @@ impl ObjModel {
         for line_elem in split {
             match line_elem.parse::<f32>() {
                 Ok(value) if i < DIM => { coord[i] = value; },
-                _ => { break; }
+                _ => { continue; }
             }
             i += 1;
         }
@@ -68,10 +68,10 @@ impl ObjModel {
                     let mut slot_idx = 0;
                     let mut indices = [0u32; 9];
                     for line_elem in split {
-                        for (idx_type, s) in line_elem.split('/').enumerate() {
+                        for (param_idx, s) in line_elem.split('/').enumerate() {
                             match s.parse::<u32>() {
-                                Ok(idx) if slot_idx < 3 && idx_type < 3 => {
-                                    indices[idx_type * 3 + slot_idx] = idx;
+                                Ok(idx) if slot_idx < 3 && param_idx < 3 => {
+                                    indices[param_idx * 3 + slot_idx] = idx;
                                 },
                                 _ => {
                                     continue

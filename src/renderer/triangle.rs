@@ -162,9 +162,12 @@ fn draw_3d_triangle_impl<C>(v1: Point3f,
                 let z = local_v1.z * bary.x +
                         local_v2.z * bary.y +
                         local_v3.z * bary.z;
-                let shade = get_color(bary.x, bary.y, bary.z).scale(intensity);
-                if bary.x < 0.0 || bary.y < 0.0 || bary.z < 0.0 { continue; }
+                if bary.x < 0.0 || bary.y < 0.0 || bary.z < 0.0 {
+                    continue;
+                }
+
                 if z_buf[(x + image.width * y) as usize] > z {
+                    let shade = get_color(bary.x, bary.y, bary.z).scale(intensity);
                     z_buf[(x + image.width * y) as usize] = z;
                     image.set(x, y, shade).unwrap();
                 }
@@ -202,7 +205,8 @@ pub fn draw_3d_triangle_textured(v1: Point3f,
         let texpnt: Vec2f = l1 * <Point2f as Into<Vec2f>>::into(tc1) +
                             l2 * <Point2f as Into<Vec2f>>::into(tc2) +
                             l3 * <Point2f as Into<Vec2f>>::into(tc3);
-        diff_texture.get(texpnt.x as i32, texpnt.y as i32).unwrap()
+        diff_texture.get((texpnt.x * diff_texture.width  as f32) as i32,
+                         (texpnt.y * diff_texture.height as f32) as i32).unwrap()
     };
 
     draw_3d_triangle_impl(v1, v2, v3, camera, light_dir, image, diff_texture_picker, z_buf);

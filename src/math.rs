@@ -70,6 +70,7 @@ impl<> Mul<Point2<f32>> for f32 {
 pub type Point2f = Point2<f32>;
 pub type Point2i = Point2<i32>;
 
+#[derive(Debug)]
 pub struct Vec2<S> {
     pub x: S,
     pub y: S,
