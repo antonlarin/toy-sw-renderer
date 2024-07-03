@@ -14,14 +14,15 @@ pub enum TGAError {
     EmptyImage,
     InvalidCoords(i32, i32),
     FileOpenError,
-    WriteError
+    IncorrectFileLayout,
+    IOError,
 }
 
 type TGAResult<T> = Result<T, TGAError>;
 
 impl From<std::io::Error> for TGAError {
     fn from(_: std::io::Error) -> TGAError {
-        TGAError::WriteError
+        TGAError::IOError
     }
 }
 
@@ -177,7 +178,43 @@ pub struct TGAImage {
 }
 
 fn load_rle_data<R: Read>(src: &mut R, img: &mut TGAImage) ->TGAResult<()> {
-    Ok(())
+    const MAX_CHUNK: usize = 128;
+    const MAX_BPP: usize = 4;
+    let bpp = img.bytespp as usize;
+    let img_data_size = (img.width * img.height) as usize * bpp;
+    img.data.reserve(img_data_size);
+
+    let mut buf = [0u8; MAX_CHUNK * MAX_BPP];
+    let mut i: usize = 0;
+    while i < img_data_size {
+        src.read_exact(&mut buf[..1])?;
+        let raw_run = buf[0] & 0x80 == 0;
+        let run_length = (buf[0] & 0x7F) as usize + 1;
+        if raw_run {
+            let chunk_size = bpp * run_length;
+            assert!(chunk_size <= MAX_CHUNK * MAX_BPP, "Too long of a raw run detected");
+            if chunk_size > MAX_CHUNK * MAX_BPP {
+                return Err(TGAError::IncorrectFileLayout)
+            }
+
+            src.read_exact(&mut buf[..chunk_size])?;
+            img.data[i..(i + chunk_size)].copy_from_slice(&buf[..chunk_size]);
+            i += chunk_size;
+        } else {
+            src.read_exact(&mut buf[..bpp])?;
+            for _ in 0..run_length {
+                img.data[i..(i + bpp)].copy_from_slice(&buf[..bpp]);
+                i += bpp;
+            }
+        }
+    }
+
+    println!("{} {}", i, img_data_size);
+    if i == img_data_size {
+        Ok(())
+    } else {
+        Err(TGAError::IncorrectFileLayout)
+    }
 }
 
 fn unload_rle_data<W: Write>(img: &TGAImage, dst: &mut W) -> TGAResult<()> {
@@ -272,7 +309,7 @@ impl TGAImage {
         if let Ok(file) = File::open(filename) {
             let mut buffered_file = BufReader::new(file);
             let header = TGAHeader::read(&mut buffered_file)?;
-            println!("Read in TGAHeader {:?}", header);
+            // TODO: sanity check the header
             let mut image = Self::with_size(header.width.into(),
                                             header.height.into(),
                                             header.bits_per_pixel as i32 / 8);
