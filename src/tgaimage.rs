@@ -15,6 +15,7 @@ pub enum TGAError {
     InvalidCoords(i32, i32),
     FileOpenError,
     IncorrectFileLayout,
+    BadHeader,
     IOError,
 }
 
@@ -181,8 +182,7 @@ fn load_rle_data<R: Read>(src: &mut R, img: &mut TGAImage) ->TGAResult<()> {
     const MAX_CHUNK: usize = 128;
     const MAX_BPP: usize = 4;
     let bpp = img.bytespp as usize;
-    let img_data_size = (img.width * img.height) as usize * bpp;
-    img.data.reserve(img_data_size);
+    let img_data_size = img.data.len();
 
     let mut buf = [0u8; MAX_CHUNK * MAX_BPP];
     let mut i: usize = 0;
@@ -209,7 +209,6 @@ fn load_rle_data<R: Read>(src: &mut R, img: &mut TGAImage) ->TGAResult<()> {
         }
     }
 
-    println!("{} {}", i, img_data_size);
     if i == img_data_size {
         Ok(())
     } else {
@@ -309,15 +308,31 @@ impl TGAImage {
         if let Ok(file) = File::open(filename) {
             let mut buffered_file = BufReader::new(file);
             let header = TGAHeader::read(&mut buffered_file)?;
-            // TODO: sanity check the header
+            let bytespp = header.bits_per_pixel as i32 / 8;
+            if header.width <= 0 || header.height <= 0 || (
+                bytespp != tga_format::GRAYSCALE &&
+                bytespp != tga_format::RGB &&
+                bytespp != tga_format::RGBA) {
+                return Err(TGAError::BadHeader)
+            }
             let mut image = Self::with_size(header.width.into(),
                                             header.height.into(),
-                                            header.bits_per_pixel as i32 / 8);
+                                            bytespp);
             load_rle_data(&mut buffered_file, &mut image)?;
-            // TODO: check that footer is present
-            Ok(image)
+
+            let mut buf = [0u8; Self::FOOTER.len()];
+            let footer_read_res = buffered_file.read(&mut buf);
+            if let Ok(_) = footer_read_res {
+                if buf == Self::FOOTER.as_bytes() {
+                    Ok(image)
+                } else {
+                    Err(TGAError::IncorrectFileLayout)
+                }
+            } else {
+                Err(TGAError::IncorrectFileLayout)
+            }
         } else {
-            return Err(TGAError::FileOpenError)
+            Err(TGAError::FileOpenError)
         }
     }
 
