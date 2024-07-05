@@ -1,9 +1,9 @@
 use crate::math::{Point2f, Point3f, Vec3f};
-use crate::objmodel::ObjModel;
+use crate::mesh::IndexedTriangleMesh;
 use crate::tgaimage::{TGAColor, TGAImage};
 use super::{Camera, draw_3d_triangle, draw_3d_triangle_textured};
 
-pub fn draw_mesh(model: &ObjModel,
+pub fn draw_mesh(model: &IndexedTriangleMesh,
                  camera: &Camera,
                  light_dir: Vec3f,
                  image: &mut TGAImage,
@@ -18,7 +18,7 @@ pub fn draw_mesh(model: &ObjModel,
     }
 }
 
-pub fn draw_mesh_textured(model: &ObjModel,
+pub fn draw_mesh_textured(model: &IndexedTriangleMesh,
                           camera: &Camera,
                           light_dir: Vec3f,
                           image: &mut TGAImage,

@@ -65,7 +65,6 @@ impl TGAHeader {
     }
 
     fn from_bytes(buf: &[u8]) -> TGAHeader {
-        assert!(buf.len() == Self::HEADER_LEN);
         let slice_to_i16 = |rng: std::ops::Range<usize>| {
             i16::from_le_bytes(buf[rng].try_into().unwrap())
         };

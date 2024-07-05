@@ -1,5 +1,6 @@
+pub mod mesh;
 pub mod math;
 pub mod tgaimage;
-pub mod objmodel;
+pub mod obj;
 pub mod renderer;
 

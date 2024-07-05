@@ -2,15 +2,15 @@ extern crate swrender;
 
 use swrender::renderer::{Camera, draw_mesh_textured};
 use swrender::math::{Point3f, Vec3f};
-use swrender::objmodel::ObjModel;
-use swrender::tgaimage::{tga_format, TGAColor, TGAImage};
+use swrender::obj;
+use swrender::tgaimage::{tga_format, TGAImage};
 
 #[allow(unused_variables)]
 fn main() {
     const IMAGE_SIZE: i32 = 1024;
     let mut image = TGAImage::with_size(IMAGE_SIZE, IMAGE_SIZE, tga_format::RGB);
-    let model = ObjModel::from_file("assets/african_head.obj").unwrap();
-    let mut texture = TGAImage::from_tga_file("assets/african_head_diffuse.tga").unwrap();
+    let model = obj::load_obj_file("assets/african_head.obj").unwrap();
+    let texture = TGAImage::from_tga_file("assets/african_head_diffuse.tga").unwrap();
     let light_dir = Vec3f { x: -3.0, y: -1.0, z: -3.0 }.normalize();
 
     // TODO: image size is currently physical,

@@ -1,9 +1,9 @@
 use crate::math::{BndBox2f, Point2f};
-use crate::objmodel::ObjModel;
+use crate::mesh::IndexedTriangleMesh;
 use crate::tgaimage::{TGAColor, TGAImage};
 use super::{Camera, draw_line};
 
-pub fn draw_mesh_wireframe(model: &ObjModel,
+pub fn draw_mesh_wireframe(model: &IndexedTriangleMesh,
                            camera: &Camera,
                            image: &mut TGAImage,
                            color: TGAColor) {
