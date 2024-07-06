@@ -1,6 +1,6 @@
 extern crate swrender;
 
-use swrender::renderer::{Camera, draw_mesh_textured};
+use swrender::renderer::{Camera, Context, draw_mesh_textured};
 use swrender::math::{Point3f, Vec3f};
 use swrender::obj;
 use swrender::tgaimage::{tga_format, TGAImage};
@@ -23,6 +23,10 @@ fn main() {
         Vec3f { x: 0.0, y: 1.0, z: 0.0 },
         400.0
     );
+    let ctx = Context {
+        camera: camera_xp_yp_zp,
+        light: light_dir,
+    };
 
     //tmp
     /*
@@ -45,7 +49,7 @@ fn main() {
     */
     texture.write_to_file("assets/turbo.tga").unwrap();
 
-    draw_mesh_textured(&model, &camera_xp_yp_zp, light_dir, &mut image, &texture);
+    draw_mesh_textured(&model, &ctx, &mut image, &texture);
 
     image.flip_vertically().unwrap();
     image.write_to_file("assets/mesh_head.tga").unwrap();

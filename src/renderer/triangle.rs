@@ -1,5 +1,5 @@
 use crate::math::{BndBox2i, BndBox2f, Point2f, Point2i, Point3f, Vec2f, Vec3f, Vec3i};
-use crate::renderer::Camera;
+use crate::renderer::Context;
 use crate::tgaimage::{TGAColor, TGAImage};
 
 #[allow(dead_code)]
@@ -110,21 +110,20 @@ fn barycentric(v1: &Point2f, v2: &Point2f, v3: &Point2f, p: &Point2f) -> Option<
 fn draw_3d_triangle_impl<C>(v1: Point3f,
                             v2: Point3f,
                             v3: Point3f,
-                            camera: &Camera,
-                            light_dir: Vec3f,
+                            ctx: &Context,
                             image: &mut TGAImage,
                             get_color: C,
                             z_buf: &mut [f32]) where C: Fn(f32, f32, f32) -> TGAColor {
     let iw = (image.width - 1) as f32;
     let ih = (image.height - 1) as f32;
 
-    let local_v1 = camera.transform(&v1);
-    let local_v2 = camera.transform(&v2);
-    let local_v3 = camera.transform(&v3);
+    let local_v1 = ctx.camera.transform(&v1);
+    let local_v2 = ctx.camera.transform(&v2);
+    let local_v3 = ctx.camera.transform(&v3);
 
     // back face culling
     let rev_normal = (v3 - v1).cross(v2 - v1).normalize();
-    let intensity = rev_normal.dot(light_dir);
+    let intensity = rev_normal.dot(ctx.light);
     if intensity <= 0.0 {
         return
     }
@@ -179,15 +178,14 @@ fn draw_3d_triangle_impl<C>(v1: Point3f,
 pub fn draw_3d_triangle(v1: Point3f,
                         v2: Point3f,
                         v3: Point3f,
-                        camera: &Camera,
-                        light_dir: Vec3f,
+                        ctx: &Context,
                         image: &mut TGAImage,
                         color: TGAColor,
                         z_buf: &mut [f32]) {
     let const_color = |_, _, _| {
         color
     };
-    draw_3d_triangle_impl(v1, v2, v3, camera, light_dir, image, const_color, z_buf);
+    draw_3d_triangle_impl(v1, v2, v3, ctx, image, const_color, z_buf);
 }
 
 pub fn draw_3d_triangle_textured(v1: Point3f,
@@ -196,8 +194,7 @@ pub fn draw_3d_triangle_textured(v1: Point3f,
                                  tc1: Point2f,
                                  tc2: Point2f,
                                  tc3: Point2f,
-                                 camera: &Camera,
-                                 light_dir: Vec3f,
+                                 ctx: &Context,
                                  image: &mut TGAImage,
                                  diff_texture: &TGAImage,
                                  z_buf: &mut [f32]) {
@@ -209,7 +206,7 @@ pub fn draw_3d_triangle_textured(v1: Point3f,
                          (texpnt.y * diff_texture.height as f32) as i32).unwrap()
     };
 
-    draw_3d_triangle_impl(v1, v2, v3, camera, light_dir, image, diff_texture_picker, z_buf);
+    draw_3d_triangle_impl(v1, v2, v3, ctx, image, diff_texture_picker, z_buf);
 }
 
 #[cfg(test)]
