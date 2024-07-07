@@ -9,6 +9,7 @@ pub fn draw_mesh_wireframe(model: &IndexedTriangleMesh,
                            color: TGAColor) {
     let iw = (image.width - 1) as f32;
     let ih = (image.height - 1) as f32;
+    let img_half_dims = Point2f { x: 0.5 * iw, y: 0.5 * ih };
     let mut screen_bbox = BndBox2f::new_empty();
     screen_bbox.add_point(Point2f { x: -iw * 0.5, y: -ih * 0.5 });
     screen_bbox.add_point(Point2f { x: iw * 0.5, y: ih * 0.5 });
@@ -22,8 +23,8 @@ pub fn draw_mesh_wireframe(model: &IndexedTriangleMesh,
             let p1 = model.vertices[v1 as usize - 1];
             let p2 = model.vertices[v2 as usize - 1];
 
-            let pnt2_1 = camera.project(&p1);
-            let pnt2_2 = camera.project(&p2);
+            let pnt2_1 = camera.project(&p1) * img_half_dims;
+            let pnt2_2 = camera.project(&p2) * img_half_dims;
             pnt2s.push(screen_bbox.clamp(pnt2_1));
             pnt2s.push(screen_bbox.clamp(pnt2_2));
         }

@@ -9,7 +9,7 @@ use swrender::tgaimage::{tga_format, TGAColor, TGAImage};
 fn main() {
     let white: TGAColor = TGAColor::from_rgb(255, 255, 255);
 
-    const IMAGE_SIZE: i32 = 512;
+    const IMAGE_SIZE: i32 = 960;
     let mut image = TGAImage::with_size(IMAGE_SIZE, IMAGE_SIZE, tga_format::RGB);
     let model = obj::load_obj_file("assets/african_head.obj").unwrap();
 
@@ -17,7 +17,7 @@ fn main() {
         Point3f { x: 1.0, y: 0.3, z: 1.0 },
         Vec3 { x: -1.0, y: -0.3, z: -1.0 },
         Vec3 { x: 0.0, y: 1.0, z: 0.0 },
-        210.0
+        0.9
     );
 
     draw_mesh_wireframe(&model, &camera_xp_yp_zp, &mut image, white);

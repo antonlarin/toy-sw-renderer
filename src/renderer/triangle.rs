@@ -128,15 +128,14 @@ fn draw_3d_triangle_impl<C>(v1: Point3f,
         return
     }
 
-    let mut flat_v1 = local_v1.drop_z();
-    flat_v1.x = (flat_v1.x + 0.5 * iw + 0.5).trunc();
-    flat_v1.y = (flat_v1.y + 0.5 * ih + 0.5).trunc();
-    let mut flat_v2 = local_v2.drop_z();
-    flat_v2.x = (flat_v2.x + 0.5 * iw + 0.5).trunc();
-    flat_v2.y = (flat_v2.y + 0.5 * ih + 0.5).trunc();
-    let mut flat_v3 = local_v3.drop_z();
-    flat_v3.x = (flat_v3.x + 0.5 * iw + 0.5).trunc();
-    flat_v3.y = (flat_v3.y + 0.5 * ih + 0.5).trunc();
+    // conversion from screen space into pixel coordinates
+    // for X and Y: [-1, 1] -> [0, img_dim]
+    let ones = Vec2f { x: 1.0, y: 1.0 };
+    let img_half_dims = Point2f { x: 0.5 * iw, y: 0.5 * ih };
+    let half_px_offset = Vec2f { x: 0.5, y: 0.5 };
+    let flat_v1 = ((local_v1.drop_z() + ones) * img_half_dims + half_px_offset).trunc();
+    let flat_v2 = ((local_v2.drop_z() + ones) * img_half_dims + half_px_offset).trunc();
+    let flat_v3 = ((local_v3.drop_z() + ones) * img_half_dims + half_px_offset).trunc();
 
     let mut clamp = BndBox2f::new_empty();
     clamp.add_point(Point2f { x: 0.0, y: 0.0 });
@@ -182,9 +181,7 @@ pub fn draw_3d_triangle(v1: Point3f,
                         image: &mut TGAImage,
                         color: TGAColor,
                         z_buf: &mut [f32]) {
-    let const_color = |_, _, _| {
-        color
-    };
+    let const_color = |_, _, _| { color };
     draw_3d_triangle_impl(v1, v2, v3, ctx, image, const_color, z_buf);
 }
 

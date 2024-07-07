@@ -13,15 +13,11 @@ fn main() {
     let texture = TGAImage::from_tga_file("assets/african_head_diffuse.tga").unwrap();
     let light_dir = Vec3f { x: -3.0, y: -1.0, z: -3.0 }.normalize();
 
-    // TODO: image size is currently physical,
-    // so zoom must change when image size is changed
-    // Need zoom to fix a specific screen plane, then
-    // the image on that plane can be rendered at various resolutions
     let camera_xp_yp_zp = Camera::new(
         Point3f { x: 1.0, y: 0.2, z: 1.0 },
         Vec3f { x: -1.0, y: -0.3, z: -1.0 },
         Vec3f { x: 0.0, y: 1.0, z: 0.0 },
-        400.0
+        0.75
     );
     let ctx = Context {
         camera: camera_xp_yp_zp,

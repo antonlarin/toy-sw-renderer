@@ -21,6 +21,12 @@ impl<S> Point2<S> where
     }
 }
 
+impl<> Point2<f32> {
+    pub fn trunc(self) -> Self {
+        Self { x: self.x.trunc(), y: self.y.trunc() }
+    }
+}
+
 impl<> From<Point2<f32>> for Point2<i32> {
     fn from(value: Point2<f32>) -> Self {
         Self { x: value.x as i32, y: value.y as i32 }
@@ -67,10 +73,18 @@ impl<> Mul<Point2<f32>> for f32 {
     }
 }
 
+impl<S> Mul for Point2<S> where S: Mul<Output = S> {
+    type Output = Self;
+
+    fn mul(self, rhs: Self) -> Self::Output {
+        Self::Output { x: self.x * rhs.x, y: self.y * rhs.y }
+    }
+}
+
 pub type Point2f = Point2<f32>;
 pub type Point2i = Point2<i32>;
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub struct Vec2<S> {
     pub x: S,
     pub y: S,
