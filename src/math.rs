@@ -1,5 +1,7 @@
 use std::ops::{Add, Div, Mul, Sub};
 
+pub mod hvec;
+
 const EPSILON: f32 = 1e-7;
 
 #[derive(Clone, Copy, Debug)]

@@ -31,9 +31,8 @@ impl Camera {
     pub fn transform(&self, pnt: &Point3f) -> Point3f {
         let rad_vec: Vec3f = Vec3f::from(*pnt) - self.loc.into();
         let z = rad_vec.dot(self.dir);
-        let vec_in_plane = rad_vec - z * self.dir;
-        let x = vec_in_plane.dot(self.ref_dir) * self.zoom;
-        let y = vec_in_plane.dot(self.up) * self.zoom;
+        let x = rad_vec.dot(self.ref_dir) * self.zoom;
+        let y = rad_vec.dot(self.up) * self.zoom;
         Point3f { x, y, z }
     }
 
