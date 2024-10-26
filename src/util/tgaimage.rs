@@ -349,8 +349,8 @@ impl TGAImage {
         Ok(())
     }
 
+    // TODO: implement
     // fn flip_horizontally(self: &mut Self) -> bool {
-
     // }
 
     pub fn flip_vertically(&mut self) -> TGAResult<()> {
@@ -385,8 +385,8 @@ impl TGAImage {
         Ok(())
     }
 
+    // TODO: implement
     // fn scale(self: &mut Self, w: i32, h: i32) -> bool {
-
     // }
 
     pub fn get(&self, x: i32, y: i32) -> TGAResult<TGAColor> {
