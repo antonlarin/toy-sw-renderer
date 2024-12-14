@@ -8,7 +8,7 @@ use swrender::tgaimage::{tga_format, TGAImage};
 #[allow(unused_variables)]
 fn main() {
     const IMAGE_SIZE: i32 = 1024;
-    let mut image = TGAImage::with_size(IMAGE_SIZE, IMAGE_SIZE, tga_format::RGB);
+    let mut image = TGAImage::with_size(IMAGE_SIZE * 3 / 2, IMAGE_SIZE, tga_format::RGB);
     let model = obj::load_obj_file("assets/african_head.obj").unwrap();
     let texture = TGAImage::from_tga_file("assets/african_head_diffuse.tga").unwrap();
     let light_dir = Vec3f { x: -3.0, y: -1.0, z: -3.0 }.normalize();

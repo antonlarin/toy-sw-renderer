@@ -1,10 +1,10 @@
-use crate::fb::Framebuffer;
 use crate::data::Color;
+use crate::fb::Framebuffer;
 use crate::math::Point2i;
 
 #[allow(dead_code)]
-pub fn draw_line_naive(p0: Point2i, p1: Point2i, buf: &mut Frambuffer, col: Color) {
-    let mut (x0, y0, x1, y1) = (p0.x, p0.y, p1.x, p1.y);
+pub fn draw_line_naive<F: Framebuffer>(p0: Point2i, p1: Point2i, buf: &mut F, col: Color) {
+    let (mut x0, mut y0, mut x1, mut y1) = (p0.x, p0.y, p1.x, p1.y);
     let mut steep = false;
     if (x1 - x0).abs() < (y1 - y0).abs() {
         std::mem::swap(&mut x0, &mut y0);
@@ -20,15 +20,15 @@ pub fn draw_line_naive(p0: Point2i, p1: Point2i, buf: &mut Frambuffer, col: Colo
     for x in x0..=x1 {
         let y = y0 + (y1 - y0) * (x - x0) / (x1 - x0);
         if steep {
-            buf.set_pixel(y, x, color).unwrap();
+            buf.set_pixel(y, x, col).unwrap();
         } else {
-            buf.set_pixel(x, y, color).unwrap();
+            buf.set_pixel(x, y, col).unwrap();
         }
     }
 }
 
-pub fn draw_line_faster(p0: Point2i, p1: Point2i, buf: &mut Framebuffer, col: Color) {
-    let mut (x0, y0, x1, y1) = (p0.x, p0.y, p1.x, p1.y);
+pub fn draw_line_fast<F: Framebuffer>(p0: Point2i, p1: Point2i, buf: &mut F, col: Color) {
+    let (mut x0, mut y0, mut x1, mut y1) = (p0.x, p0.y, p1.x, p1.y);
     let mut steep = false;
     if (x1 - x0).abs() < (y1 - y0).abs() {
         std::mem::swap(&mut x0, &mut y0);
@@ -63,87 +63,85 @@ pub fn draw_line_faster(p0: Point2i, p1: Point2i, buf: &mut Framebuffer, col: Co
 
 #[cfg(test)]
 mod test {
-    use crate::tgaimage::{tga_format, TGAImage, TGAColor};
-    use super::*;
+    use super::{draw_line_naive, draw_line_fast};
+    use crate::data::Color;
+    use crate::fb::Bitmap;
 
-    fn setup_1_image() -> (TGAImage, TGAColor) {
-        (TGAImage::with_size(6, 6, tga_format::RGB),
-         TGAColor::from_rgb(255, 255, 255))
+    fn setup_1_image() -> (Bitmap, Color) {
+        (Bitmap::with_size(6, 6), Color::white())
     }
 
-    fn setup_2_images() -> (TGAImage, TGAImage, TGAColor) {
-        (TGAImage::with_size(6, 6, tga_format::RGB),
-         TGAImage::with_size(6, 6, tga_format::RGB),
-         TGAColor::from_rgb(255, 255, 255))
+    fn setup_2_images() -> (Bitmap, Bitmap, Color) {
+        (Bitmap::with_size(6, 6), Bitmap::with_size(6, 6), Color::white())
     }
 
     #[test]
     fn draw_positive_sloped_line_is_symmetric() {
-        let body = |draw| {
-            let (mut img1, mut img2, col) = setup_2_images();
+        let body = |draw_fn| {
+            let (mut img1, mut img2, white) = setup_2_images();
 
-            draw(1, 2, 4, 5, &mut img1, col);
-            draw(4, 5, 1, 2, &mut img2, col);
+            draw_fn(1, 2, 4, 5, &mut img1, white);
+            draw_fn(4, 5, 1, 2, &mut img2, white);
 
             assert_eq!(img1, img2);
         };
 
         body(draw_line_naive);
-        body(draw_line_faster);
+        body(draw_line_fast);
     }
 
     #[test]
     fn draw_negative_sloped_line_is_symmetric() {
-        let body = |draw| {
-            let (mut img1, mut img2, col) = setup_2_images();
+        let body = |draw_fn| {
+            let (mut img1, mut img2, white) = setup_2_images();
 
-            draw_line(2, 5, 4, 1, &mut img1, col);
-            draw_line(4, 1, 2, 5, &mut img2, col);
+            draw_fn(2, 5, 4, 1, &mut img1, white);
+            draw_fn(4, 1, 2, 5, &mut img2, white);
 
             assert_eq!(img1, img2);
         };
 
         body(draw_line_naive);
-        body(draw_line_faster);
+        body(draw_line_fast);
     }
 
     #[test]
     fn draw_x_aligned_line() {
-        let body = |draw| {
-            let (mut img, col) = setup_1_image();
-            let black = TGAColor::from_rgb(0, 0, 0);
+        let body = |draw_fn| {
+            let (mut img, white) = setup_1_image();
+            let black = Color::black();
 
-            draw_line(0, 3, 5, 3, &mut img, col);
+            draw_fn(0, 3, 5, 3, &mut img, white);
 
             for y in 0..img.height {
-                let expected_col = if y == 3 { col } else { black };
+                let expected_white = if y == 3 { white } else { black };
                 for x in 0..img.width {
-                    assert_eq!(img.get(x, y).unwrap(), expected_col, "@ ({}, {})", x, y);
+                    assert_eq!(img.get_pixel(x, y).unwrap(), expected_white, "@ ({}, {})", x, y);
                 }
             }
         };
 
         body(draw_line_naive);
-        body(draw_line_faster);
+        body(draw_line_fast);
     }
 
     #[test]
     fn draw_y_aligned_line() {
-        let body = |draw| {
-            let (mut img, col) = setup_1_image();
-            let black = TGAColor::from_rgb(0, 0, 0);
+        let body = |draw_fn| {
+            let (mut img, white) = setup_1_image();
+            let black = Color::black();
 
-            draw_line(2, 0, 2, 5, &mut img, col);
+            draw_fn(2, 0, 2, 5, &mut img, white);
 
             for x in 0..img.width {
-                let expected_col = if x == 2 { col } else { black };
+                let expected_white = if x == 2 { white } else { black };
                 for y in 0..img.height {
-                    assert_eq!(img.get(x, y).unwrap(), expected_col, "@ ({}, {})", x, y);
+                    assert_eq!(img.get_pixel(x, y).unwrap(), expected_white, "@ ({}, {})", x, y);
                 }
             }
         };
 
         body(draw_line_naive);
-        body(draw_line_faster);
+        body(draw_line_fast);
     }
 }

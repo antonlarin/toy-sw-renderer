@@ -14,4 +14,3 @@ pub struct IndexedTriangleMesh {
     pub texcoords: Option<Vec<Point2f>>,
     pub normals: Option<Vec<Vec3f>>,
 }
-

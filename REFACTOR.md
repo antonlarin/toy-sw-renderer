@@ -1,7 +1,7 @@
 # Refactor TODO
 ## 2D library
-* [ ] Extract Color and Bitmap
-* [ ] Implement Framebuffer for Bitmap
+* [x] Extract Color and Bitmap
+* [x] Implement Framebuffer for Bitmap
 * [ ] Make TGA into a persistence util library
 * [ ] Errors for the 2D portion of the library
 * [ ] Update the 2D example binaries

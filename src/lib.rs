@@ -6,6 +6,7 @@
 
 pub mod core2d;
 pub mod core3d;
+pub mod error;
 pub mod math;
 pub mod data;
 pub mod fb;

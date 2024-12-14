@@ -1,14 +1,15 @@
+use crate::data::Color;
+use crate::fb::Framebuffer;
 use crate::math::{BndBox2i, Point2i, Vec3f, Vec3i};
-use crate::tgaimage::{TGAColor, TGAImage};
 
 #[allow(dead_code)]
-pub fn draw_triangle_sweep(v1: Point2i, v2: Point2i, v3: Point2i, image: &mut TGAImage, color: TGAColor) {
+pub fn draw_triangle_sweep<F: Framebuffer>(v1: Point2i, v2: Point2i, v3: Point2i, buf: &mut F, col: Color) {
     // handle degenerate triangle first
     if v1.y == v2.y && v2.y == v3.y {
         let xl = v1.x.min(v2.x.min(v3.x));
         let xr = v1.x.max(v2.x.max(v3.x));
         for x in xl..=xr {
-            image.set(x, v1.y, color).unwrap();
+            buf.set_pixel(x, v1.y, col).unwrap();
         }
         return;
     }
@@ -32,21 +33,21 @@ pub fn draw_triangle_sweep(v1: Point2i, v2: Point2i, v3: Point2i, image: &mut TG
 
         if xl > xr { std::mem::swap(&mut xl, &mut xr); }
         for x in xl..=xr {
-            image.set(x, p1.y + i, color).unwrap();
+            buf.set_pixel(x, p1.y + i, col).unwrap();
         }
     }
 }
 
-pub fn draw_triangle_parallel(v1: Point2i, v2: Point2i, v3: Point2i, image: &mut TGAImage, color: TGAColor) {
+pub fn draw_triangle_parallel<F: Framebuffer>(v1: Point2i, v2: Point2i, v3: Point2i, buf: &mut F, col: Color) {
     if v1.y == v2.y && v2.y == v3.y {
         let xl = v1.x.min(v2.x.min(v3.x));
         let xr = v1.x.max(v2.x.max(v3.x));
-        for x in xl..=xr { image.set(x, v1.y, color).unwrap(); }
+        for x in xl..=xr { buf.set_pixel(x, v1.y, col).unwrap(); }
         return;
     } else if v1.x == v2.x && v2.x == v3.x {
         let yt = v1.y.min(v2.y.min(v3.y));
         let yb = v1.y.max(v2.y.max(v3.y));
-        for y in yt..=yb { image.set(v1.x, y, color).unwrap(); }
+        for y in yt..=yb { buf.set_pixel(v1.x, y, col).unwrap(); }
         return;
     }
 
@@ -81,116 +82,136 @@ pub fn draw_triangle_parallel(v1: Point2i, v2: Point2i, v3: Point2i, image: &mut
     for x in bbox.min.x..=bbox.max.x {
         for y in bbox.min.y..=bbox.max.y {
             if is_inside(Point2i { x, y }) {
-                image.set(x, y, color).unwrap();
+                buf.set_pixel(x, y, col).unwrap();
             }
         }
     }
 }
 
-pub fn draw_triangle(v1: Point2i, v2: Point2i, v3: Point2i, image: &mut TGAImage, color: TGAColor) {
-    draw_triangle_parallel(v1, v2, v3, image, color);
-}
+//pub fn draw_triangle(v1: Point2i, v2: Point2i, v3: Point2i, image: &mut TGAImage, color: TGAColor) {
+//    draw_triangle_parallel(v1, v2, v3, image, color);
+//}
 
 #[cfg(test)]
 mod test {
-    use super::{draw_triangle, TGAImage, TGAColor, Point2i};
-    use crate::tgaimage::tga_format;
+    use super::{draw_triangle_sweep, draw_triangle_parallel};
+    use crate::data::Color;
+    use crate::fb::Bitmap;
+    use crate::math::Point2i;
 
-    fn setup_1_image() -> (TGAImage, TGAColor) {
-        (TGAImage::with_size(6, 6, tga_format::RGB),
-         TGAColor::from_rgb(255, 255, 255))
+    fn setup_1_image() -> (Bitmap, Color) {
+        (Bitmap::with_size(6, 6), Color::white())
     }
 
-    fn setup_2_images() -> (TGAImage, TGAImage, TGAColor) {
-        (TGAImage::with_size(6, 6, tga_format::RGB),
-         TGAImage::with_size(6, 6, tga_format::RGB),
-         TGAColor::from_rgb(255, 255, 255))
+    fn setup_2_images() -> (Bitmap, Bitmap, Color) {
+        (Bitmap::with_size(6, 6), Bitmap::with_size(6, 6), Color::white())
     }
 
     #[test]
     fn different_vertex_order() {
-        let (mut img1, mut img2, col) = setup_2_images();
+        let body = |draw_fn| {
+            let (mut img1, mut img2, white) = setup_2_images();
 
-        let v1 = Point2i { x: 3, y: 0 };
-        let v2 = Point2i { x: 5, y: 5 };
-        let v3 = Point2i { x: 1, y: 3 };
-        draw_triangle(v1, v2, v3, &mut img1, col);
-        draw_triangle(v1, v3, v2, &mut img2, col);
+            let v1 = Point2i { x: 3, y: 0 };
+            let v2 = Point2i { x: 5, y: 5 };
+            let v3 = Point2i { x: 1, y: 3 };
+            draw_fn(v1, v2, v3, &mut img1, white);
+            draw_fn(v1, v3, v2, &mut img2, white);
 
-        assert_eq!(img1, img2);
+            assert_eq!(img1, img2);
+        };
+
+        body(draw_triangle_sweep);
+        body(draw_triangle_parallel);
     }
 
     #[test]
     fn degenerate_x_triangle() {
-        let (mut img, col) = setup_1_image();
-        let black = TGAColor::from_rgb(0, 0, 0);
+        let body = |draw_fn| {
+            let (mut img, white) = setup_1_image();
+            let black = Color::black();
 
-        let v1 = Point2i { x: 0, y: 3 };
-        let v2 = Point2i { x: 2, y: 3 };
-        let v3 = Point2i { x: 5, y: 3 };
+            let v1 = Point2i { x: 0, y: 3 };
+            let v2 = Point2i { x: 2, y: 3 };
+            let v3 = Point2i { x: 5, y: 3 };
 
-        draw_triangle(v1, v2, v3, &mut img, col);
-        img.write_to_file("assets/test_degen_x.tga").unwrap();
+            draw_fn(v1, v2, v3, &mut img, white);
+            // TODO: implement Bitmap writing to TGA
+            //img.write_to_file("assets/test_degen_x.tga").unwrap();
 
-        for y in 0..img.height {
-            let expected_col = if y == 3 { col } else { black };
-            for x in 0..img.width {
-                assert_eq!(img.get(x, y).unwrap(), expected_col, "@ ({}, {})", x, y);
+            for y in 0..img.height {
+                let expected_white = if y == 3 { white } else { black };
+                for x in 0..img.width {
+                    assert_eq!(img.get_pixel(x, y).unwrap(), expected_white, "@ ({}, {})", x, y);
+                }
             }
-        }
+        };
+
+        body(draw_triangle_sweep);
+        body(draw_triangle_parallel);
     }
 
     #[test]
     fn degenerate_y_triangle() {
-        let (mut img, col) = setup_1_image();
-        let black = TGAColor::from_rgb(0, 0, 0);
+        let body = |draw_fn| {
+            let (mut img, white) = setup_1_image();
+            let black = Color::black();
 
-        let v1 = Point2i { x: 2, y: 0 };
-        let v2 = Point2i { x: 2, y: 5 };
-        let v3 = Point2i { x: 2, y: 2 };
+            let v1 = Point2i { x: 2, y: 0 };
+            let v2 = Point2i { x: 2, y: 5 };
+            let v3 = Point2i { x: 2, y: 2 };
 
-        draw_triangle(v1, v2, v3, &mut img, col);
-        img.write_to_file("assets/test_degen_y.tga").unwrap();
+            draw_fn(v1, v2, v3, &mut img, white);
+            // TODO: implement Bitmap writing to TGA
+            //img.write_to_file("assets/test_degen_y.tga").unwrap();
 
-        for x in 0..img.width {
-            let expected_col = if x == 2 { col } else { black };
-            for y in 0..img.height {
-                assert_eq!(img.get(x, y).unwrap(), expected_col, "@ ({}, {})", x, y);
+            for x in 0..img.width {
+                let expected_white = if x == 2 { white } else { black };
+                for y in 0..img.height {
+                    assert_eq!(img.get_pixel(x, y).unwrap(), expected_white, "@ ({}, {})", x, y);
+                }
             }
-        }
+        };
+
+        body(draw_triangle_sweep);
+        body(draw_triangle_parallel);
     }
 
     #[test]
     fn corner_right_triangles() {
-        let (mut img, col) = setup_1_image();
-        let black = TGAColor::from_rgb(0, 0, 0);
+        let body = |draw_fn| {
+            let white = Color::white();
+            let black = Color::black();
 
-        let vs = [
-            Point2i { x: 0, y: 0 },
-            Point2i { x: 5, y: 0 },
-            Point2i { x: 5, y: 5 },
-            Point2i { x: 0, y: 5 },
-        ];
-        let preds = [
-            |x, y| x >= y,
-            |x, y| x + y >= 5,
-            |x, y| y >= x,
-            |x, y| x + y <= 5,
-        ];
+            let vs = [
+                Point2i { x: 0, y: 0 },
+                Point2i { x: 5, y: 0 },
+                Point2i { x: 5, y: 5 },
+                Point2i { x: 0, y: 5 },
+            ];
+            let preds = [
+                |x, y| x >= y,
+                |x, y| x + y >= 5,
+                |x, y| y >= x,
+                |x, y| x + y <= 5,
+            ];
 
-        for i in 0..4 {
-            draw_triangle(vs[i], vs[(i + 1) % 4], vs[(i + 2) % 4], &mut img, col);
-            img.write_to_file(format!("assets/test_corner_tri_{}.tga", i).as_str()).unwrap();
+            for i in 0..4 {
+                let mut img = Bitmap::with_size(6, 6);
+                draw_fn(vs[i], vs[(i + 1) % 4], vs[(i + 2) % 4], &mut img, white);
+                // TODO: implement Bitmap writing to TGA
+                //img.write_to_file(format!("assets/test_corner_tri_{}.tga", i).as_str()).unwrap();
 
-            for x in 0..img.width {
-                for y in 0..img.height {
-                    let expected_col = if preds[i](x, y) { col } else { black };
-                    assert_eq!(img.get(x, y).unwrap(), expected_col, "@ ({}, {}) triangle at corner {}", x, y, i);
+                for x in 0..img.width {
+                    for y in 0..img.height {
+                        let expected_white = if preds[i](x, y) { white } else { black };
+                        assert_eq!(img.get_pixel(x, y).unwrap(), expected_white, "@ ({}, {}) triangle at corner {}", x, y, i);
+                    }
                 }
             }
+        };
 
-            img.clear();
-        }
+        body(draw_triangle_sweep);
+        body(draw_triangle_parallel);
     }
 }
-

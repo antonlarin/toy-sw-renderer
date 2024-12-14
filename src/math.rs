@@ -2,10 +2,16 @@ use std::ops::{Add, Div, Mul, Sub};
 
 pub mod hvec;
 
-const EPSILON: f32 = 1e-7;
+//pub trait Scalar = Add + Div + Mul + Sub;
+//
+//impl Scalar for f32 {
+//}
+//
+//impl Scalar for i32 {
+//}
 
 #[derive(Clone, Copy, Debug)]
-pub struct Point2<S> {
+pub struct Point2<S/*: Scalar*/> {
     pub x: S,
     pub y: S,
 }
@@ -207,15 +213,15 @@ impl Vec3<f32> {
 
     pub fn normalize(&self) -> Self {
         let norm = self.norm();
-        assert!(norm > EPSILON);
+        assert!(norm > f32::EPSILON);
         *self * norm.recip()
     }
 
     pub fn orthogonalize(&self, ref_vec: Self) -> Option<Self> {
-        assert!(ref_vec.norm() > EPSILON);
+        assert!(ref_vec.norm() > f32::EPSILON);
         let collinear_portion = self.dot(ref_vec) * ref_vec;
         let res = *self - collinear_portion;
-        if res.norm() < EPSILON {
+        if res.norm() < f32::EPSILON {
             None
         } else {
             Some(res)
