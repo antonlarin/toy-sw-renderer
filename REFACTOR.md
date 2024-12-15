@@ -1,3 +1,6 @@
+# Currently
+Rewriting the 2d library and example binaries. Fixing the library code so that example `threelines` works. Moving `flip_vertically` function to `Bitmap` and re-organizing the TGA module to only have `write_tga` and `read_tga` in public API.
+
 # Refactor TODO
 ## 2D library
 * [x] Extract Color and Bitmap

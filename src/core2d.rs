@@ -8,10 +8,10 @@ use super::data::Color;
 use super::fb::Framebuffer;
 use super::math::Point2i;
 
-pub fn draw_line<FB: Framebuffer>(p0: Point2i, p1: Point2i, buf: &mut FB, col: Color) {
+pub fn draw_line<F: Framebuffer>(p0: Point2i, p1: Point2i, buf: &mut F, col: Color) {
     draw_line_fast(p0, p1, buf, col);
 }
 
-pub fn draw_triangle<FB: Framebuffer>(p0: Point2i, p1: Point2i, p2: Point2i, buf: &mut FB, col: Color) {
+pub fn draw_triangle<F: Framebuffer>(p0: Point2i, p1: Point2i, p2: Point2i, buf: &mut F, col: Color) {
     draw_triangle_parallel(p0, p1, p2, buf, col);
 }
